@@ -529,6 +529,17 @@ install() {
     else
         echo -e "${YELLOW}Run 'opencode' to start!${NC}"
     fi
+    
+    # Offer to delete install script
+    if [[ -n "$0" && "$0" != "-" && -f "$0" ]]; then
+        echo ""
+        read -rp "Delete install script? [Y/n]: " delete_choice
+        delete_choice="${delete_choice:-y}"
+        if [[ "$delete_choice" =~ ^[Yy] ]]; then
+            rm -f "$0"
+            echo -e "${GREEN}Install script deleted.${NC}"
+        fi
+    fi
 }
 
 # ============================================
