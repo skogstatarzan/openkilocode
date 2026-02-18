@@ -25,7 +25,7 @@ This configuration comes pre-configured with **orchestrator** as the default age
 - **@mapper** → Repository mapping
 
 The orchestrator also uses **skills** when beneficial:
-- **cartography** → Maps codebase structure (automatically when you ask to understand/map the codebase)
+- **cartography** → Maps codebase structure (automatically when you ask to understand/map the codebase or by simply input 'cartography')
 - **simplify** → Automatically refines code after changes for clarity
 
 Most users only need to interact with the orchestrator—it handles delegation automatically.
@@ -66,18 +66,6 @@ brew install git
 ```bash
 winget install Git.Git
 ```
-
-## Agents
-
-| Agent | Role | Mode | Description |
-|-------|------|------|-------------|
-| **orchestrator** | Primary | `primary` | Delegates tasks to specialists |
-| **explorer** | Search | `subagent` | Fast codebase navigation |
-| **oracle** | Advisor | `subagent` | Architecture & debugging |
-| **librarian** | Research | `subagent` | Documentation lookup |
-| **designer** | UI/UX | `subagent` | Visual polish |
-| **fixer** | Builder | `subagent` | Fast implementation |
-| **mapper** | Cartography | `subagent` | Repository mapping |
 
 ## MCP Servers
 
