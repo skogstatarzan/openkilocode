@@ -91,9 +91,17 @@ get_config_dir() {
             ;;
         windows)
             if [[ "$install_type" == "kilo" ]]; then
-                echo "$APPDATA/kilo"
+                if [[ -n "$XDG_CONFIG_HOME" ]]; then
+                    echo "$XDG_CONFIG_HOME/kilo"
+                else
+                    echo "$HOME/.config/kilo"
+                fi
             else
-                echo "$APPDATA/opencode"
+                if [[ -n "$XDG_CONFIG_HOME" ]]; then
+                    echo "$XDG_CONFIG_HOME/opencode"
+                else
+                    echo "$HOME/.config/opencode"
+                fi
             fi
             ;;
         *)
