@@ -50,11 +50,6 @@ brew install git
 winget install Git.Git
 ```
 
-**Windows (via Chocolatey)**
-```bash
-choco install git
-```
-
 ## Agents
 
 | Agent | Role | Mode | Description |
@@ -222,7 +217,7 @@ Add API keys directly in `opencode.json`:
     ├── simplify/
     └── agent-browser/
 
-> **Note**: On Windows, `~/.config` translates to `%USERPROFILE%\.config\`
+> **Note**: On Windows, `~/.config` translates to `%USERPROFILE%/.config/`
 
 ## Default Models
 
