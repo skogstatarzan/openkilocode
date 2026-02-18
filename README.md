@@ -26,7 +26,7 @@ This configuration comes pre-configured with **orchestrator** as the default age
 
 The orchestrator also uses **skills** when beneficial:
 - **cartography** → Maps codebase structure (use `@mapper` or run with `/map`)
-- **simplify** → Refines and simplifies code
+- **simplify** → Automatically refines code after changes for clarity
 
 Most users only need to interact with the orchestrator—it handles delegation automatically.
 
