@@ -74,22 +74,10 @@ winget install Git.Git
 
 For web browsing/screenshot capabilities (used by @designer for UI analysis):
 
-**All platforms**
+**All platforms (requires Node.js)**
 ```bash
 npm install -g agent-browser
 agent-browser install
-```
-
-**macOS**
-```bash
-brew install agent-browser
-agent-browser install
-```
-
-**Linux (with dependencies)**
-```bash
-npm install -g agent-browser
-agent-browser install --with-deps
 ```
 
 ## Usage
