@@ -23,6 +23,8 @@ REPO_BRANCH="main"
 USE_DEFAULTS=true
 CUSTOM_MODELS=""
 INSTALL_TYPE="opencode"  # "opencode" or "kilo"
+EXA_API_KEY=""
+CONTEXT7_API_KEY=""
 
 # Check if running interactively
 is_interactive() {
@@ -202,6 +204,39 @@ prompt_install_type() {
 }
 
 # ============================================
+# API Key Configuration
+# ============================================
+
+prompt_api_keys() {
+    if ! is_interactive; then
+        return
+    fi
+    
+    echo ""
+    echo -e "${CYAN}═══════════════════════════════════════════════════════════${NC}"
+    echo -e "${CYAN}  API Keys (Optional)${NC}"
+    echo -e "${CYAN}═══════════════════════════════════════════════════════════${NC}"
+    echo ""
+    echo -e "Add API keys directly in config for MCP servers."
+    echo -e "Skip if using environment variables or OAuth."
+    echo ""
+    
+    read -rp "EXA_API_KEY (for websearch): " exa_key
+    read -rp "CONTEXT7_API_KEY (for docs): " context7_key
+    
+    if [[ -n "$exa_key" ]]; then
+        EXA_API_KEY="$exa_key"
+    fi
+    if [[ -n "$context7_key" ]]; then
+        CONTEXT7_API_KEY="$context7_key"
+    fi
+    
+    if [[ -z "$EXA_API_KEY" && -z "$CONTEXT7_API_KEY" ]]; then
+        echo -e "${YELLOW}No keys added. You can add them later in opencode.json if needed.${NC}"
+    fi
+}
+
+# ============================================
 # Get Available Models from OpenCode
 # ============================================
 
@@ -253,11 +288,24 @@ generate_config() {
     local models="$1"
     local config_dir="$2"
     local install_type="$3"
+    local exa_key="$4"
+    local context7_key="$5"
     
     # Adjust model prefix based on install type
     local model_prefix="opencode"
     if [[ "$install_type" == "kilo" ]]; then
         model_prefix="kilo"
+    fi
+    
+    # Set API keys or use env var placeholders
+    local exa_header="\"x-api-key\": \"{env:EXA_API_KEY}\""
+    local context7_header="\"CONTEXT7_API_KEY\": \"{env:CONTEXT7_API_KEY}\""
+    
+    if [[ -n "$exa_key" ]]; then
+        exa_header="\"x-api-key\": \"$exa_key\""
+    fi
+    if [[ -n "$context7_key" ]]; then
+        context7_header="\"CONTEXT7_API_KEY\": \"$context7_key\""
     fi
     
     template=$(cat << TPLATE
@@ -269,14 +317,14 @@ generate_config() {
       "type": "remote",
       "url": "https://mcp.exa.ai/mcp?tools=web_search_exa",
       "headers": {
-        "x-api-key": "{env:EXA_API_KEY}"
+        $exa_header
       }
     },
     "context7": {
       "type": "remote",
       "url": "https://mcp.context7.com/mcp",
       "headers": {
-        "CONTEXT7_API_KEY": "{env:CONTEXT7_API_KEY}"
+        $context7_header
       }
     },
     "grep_app": {
@@ -450,6 +498,7 @@ install() {
     
     # Interactive prompts
     prompt_install_type
+    prompt_api_keys
     
     # Get config directory
     config_dir=$(get_config_dir "$INSTALL_TYPE" "$os")
@@ -503,7 +552,7 @@ install() {
     
     # Generate config
     echo -e "${GREEN}Generating configuration...${NC}"
-    generate_config "$models" "$config_dir" "$INSTALL_TYPE" > "$config_dir/opencode.json"
+    generate_config "$models" "$config_dir" "$INSTALL_TYPE" "$EXA_API_KEY" "$CONTEXT7_API_KEY" > "$config_dir/opencode.json"
     
     # Notify about backup if it exists
     if [[ -n "$json_backup" ]]; then
