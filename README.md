@@ -2,28 +2,20 @@
 
 Multi-agent configuration for OpenCode with 7 specialized agents and MCP integration.
 
-```
-▄▄▄▄▄                     ▄▄▄   ▄▄▄     ▄▄        ▄▄▄▄▄▄▄          ▄▄       
-▄███████▄                   ███ ▄███▀ ▀▀  ██       ███▀▀▀▀▀          ██       
-███   ███ ████▄ ▄█▀█▄ ████▄ ███████   ██  ██ ▄███▄ ███      ▄███▄ ▄████ ▄█▀█▄ 
-███▄▄▄███ ██ ██ ██▄█▀ ██ ██ ███▀███▄  ██  ██ ██ ██ ███      ██ ██ ██ ██ ██▄█▀ 
- ▀█████▀  ████▀ ▀█▄▄▄ ██ ██ ███  ▀███ ██▄ ██ ▀███▀ ▀███████ ▀███▀ ▀████ ▀█▄▄▄ 
-          ██                                                                  
-          ▀▀                                                                  
+```                                                                                                                                               
+▄████▄ ▄▄▄▄  ▄▄▄▄▄ ▄▄  ▄▄ ██ ▄█▀ ▄▄ ▄▄     ▄▄▄  ▄█████  ▄▄▄  ▄▄▄▄  ▄▄▄▄▄ 
+██  ██ ██▄█▀ ██▄▄  ███▄██ ████   ██ ██    ██▀██ ██     ██▀██ ██▀██ ██▄▄  
+▀████▀ ██    ██▄▄▄ ██ ▀██ ██ ▀█▄ ██ ██▄▄▄ ▀███▀ ▀█████ ▀███▀ ████▀ ██▄▄▄ 
+                                                                                                                                     
 ```
 
 ## Quick Start
 
 ```bash
-# Download and run interactively (recommended for choices)
-curl -fsSL https://raw.githubusercontent.com/skogstatarzan/opencode-config/main/install -o install.sh
-bash install.sh
-
-# Or use defaults directly (non-interactive)
-curl -fsSL https://raw.githubusercontent.com/skogstatarzan/opencode-config/main/install | bash
+curl -fsSL https://raw.githubusercontent.com/skogstatarzan/opencode-config/main/install -o install.sh && bash install.sh
 ```
 
-The interactive installer will ask you:
+The installer will ask you:
 1. **Installation type**: OpenCode or KiloCode CLI (determines config folder)
 2. **Model selection**: Use defaults or specify custom models
 
