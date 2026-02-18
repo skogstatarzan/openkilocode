@@ -16,7 +16,7 @@ This configuration works with **both OpenCode and KiloCode CLI**.
 ## Quick Start
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/skogstatarzan/openkilocode/main/install -o install.sh && bash install.sh
+curl -LfsSL https://raw.githubusercontent.com/skogstatarzan/openkilocode/main/install -o install.sh && bash install.sh
 ```
 
 The installer will ask you to choose:

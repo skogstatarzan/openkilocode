@@ -268,21 +268,21 @@ update_agent_models() {
     fi
     
     if [[ "$install_type" == "kilo" ]]; then
-        sed -i 's/^model: .*/model: kilo\/z-ai\/glm-5/' "$config_dir/agents/orchestrator.md"
-        sed -i 's/^model: .*/model: kilo\/minimax\/minimax-m2.5/' "$config_dir/agents/explorer.md"
-        sed -i 's/^model: .*/model: kilo\/anthropic\/claude-sonnet-4.6/' "$config_dir/agents/oracle.md"
-        sed -i 's/^model: .*/model: kilo\/google\/gemini-3-flash-preview/' "$config_dir/agents/librarian.md"
-        sed -i 's/^model: .*/model: kilo\/google\/gemini-3-flash-preview/' "$config_dir/agents/designer.md"
-        sed -i 's/^model: .*/model: kilo\/minimax\/minimax-m2.5/' "$config_dir/agents/fixer.md"
-        sed -i 's/^model: .*/model: kilo\/minimax\/minimax-m2.5/' "$config_dir/agents/mapper.md"
+        sed -i '' 's|^model: .*|model: kilo/z-ai/glm-5|' "$config_dir/agents/orchestrator.md"
+        sed -i '' 's|^model: .*|model: kilo/minimax/minimax-m2.5|' "$config_dir/agents/explorer.md"
+        sed -i '' 's|^model: .*|model: kilo/anthropic/claude-sonnet-4.6|' "$config_dir/agents/oracle.md"
+        sed -i '' 's|^model: .*|model: kilo/google/gemini-3-flash-preview|' "$config_dir/agents/librarian.md"
+        sed -i '' 's|^model: .*|model: kilo/google/gemini-3-flash-preview|' "$config_dir/agents/designer.md"
+        sed -i '' 's|^model: .*|model: kilo/minimax/minimax-m2.5|' "$config_dir/agents/fixer.md"
+        sed -i '' 's|^model: .*|model: kilo/minimax/minimax-m2.5|' "$config_dir/agents/mapper.md"
     else
-        sed -i 's/^model: .*/model: opencode\/glm-5/' "$config_dir/agents/orchestrator.md"
-        sed -i 's/^model: .*/model: opencode\/minimax-m2.5/' "$config_dir/agents/explorer.md"
-        sed -i 's/^model: .*/model: opencode\/claude-sonnet-4-6/' "$config_dir/agents/oracle.md"
-        sed -i 's/^model: .*/model: opencode\/gemini-3-flash/' "$config_dir/agents/librarian.md"
-        sed -i 's/^model: .*/model: opencode\/gemini-3-flash/' "$config_dir/agents/designer.md"
-        sed -i 's/^model: .*/model: opencode\/minimax-m2.5/' "$config_dir/agents/fixer.md"
-        sed -i 's/^model: .*/model: opencode\/minimax-m2.5/' "$config_dir/agents/mapper.md"
+        sed -i '' 's|^model: .*|model: opencode/glm-5|' "$config_dir/agents/orchestrator.md"
+        sed -i '' 's|^model: .*|model: opencode/minimax-m2.5|' "$config_dir/agents/explorer.md"
+        sed -i '' 's|^model: .*|model: opencode/claude-sonnet-4-6|' "$config_dir/agents/oracle.md"
+        sed -i '' 's|^model: .*|model: opencode/gemini-3-flash|' "$config_dir/agents/librarian.md"
+        sed -i '' 's|^model: .*|model: opencode/gemini-3-flash|' "$config_dir/agents/designer.md"
+        sed -i '' 's|^model: .*|model: opencode/minimax-m2.5|' "$config_dir/agents/fixer.md"
+        sed -i '' 's|^model: .*|model: opencode/minimax-m2.5|' "$config_dir/agents/mapper.md"
     fi
 }
 
