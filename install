@@ -468,15 +468,33 @@ install() {
         fi
     fi
     
-    # Backup existing config
+    # Check for existing config
+    local update_mode=false
     if [[ -d "$config_dir" ]]; then
-        local backup_dir="${config_dir}.backup.$(date +%Y%m%d_%H%M%S)"
-        echo -e "${YELLOW}Backing up existing config to: ${backup_dir}${NC}"
-        mv "$config_dir" "$backup_dir"
+        echo ""
+        echo -e "${YELLOW}Existing config found at: ${config_dir}${NC}"
+        read -rp "Update existing (U) or Fresh install (F)? [U/f]: " install_mode
+        install_mode="${install_mode:-u}"
+        
+        if [[ "$install_mode" =~ ^[Uu]$ ]]; then
+            update_mode=true
+            # Backup opencode.json
+            if [[ -f "$config_dir/opencode.json" ]]; then
+                local json_backup="${config_dir}/opencode.json.backup.$(date +%Y%m%d_%H%M%S)"
+                cp "$config_dir/opencode.json" "$json_backup"
+                echo -e "${YELLOW}Backed up opencode.json to: $(basename "$json_backup")${NC}"
+                echo -e "${YELLOW}Review this file if you had custom configurations you want to keep.${NC}"
+            fi
+        else
+            # Fresh install - full backup
+            local backup_dir="${config_dir}.backup.$(date +%Y%m%d_%H%M%S)"
+            echo -e "${YELLOW}Backing up existing config to: ${backup_dir}${NC}"
+            mv "$config_dir" "$backup_dir"
+            mkdir -p "$config_dir"
+        fi
+    else
+        mkdir -p "$config_dir"
     fi
-    
-    # Create config directory
-    mkdir -p "$config_dir"
     
     # Download repo
     echo -e "${GREEN}Downloading OpenCode Pantheon...${NC}"
@@ -486,6 +504,11 @@ install() {
             echo -e "${RED}Failed to clone repository${NC}"
             exit 1
         }
+        
+        if [[ "$update_mode" == "true" ]]; then
+            # Update mode: remove only repo-managed files, keep user files
+            rm -rf "$config_dir/agents" "$config_dir/skills" 2>/dev/null || true
+        fi
         
         # Copy files (excluding .git and install script)
         cp -r /tmp/opencode-pantheon/{agents,skills} "$config_dir/" 2>/dev/null || true
@@ -504,7 +527,11 @@ install() {
     
     # Success message
     echo -e "\n${GREEN}═══════════════════════════════════════════════════════════${NC}"
-    echo -e "${GREEN}  ✓ OpenCode Pantheon installed successfully!${NC}"
+    if [[ "$update_mode" == "true" ]]; then
+        echo -e "${GREEN}  ✓ OpenCode Pantheon updated successfully!${NC}"
+    else
+        echo -e "${GREEN}  ✓ OpenCode Pantheon installed successfully!${NC}"
+    fi
     echo -e "${GREEN}═══════════════════════════════════════════════════════════${NC}"
     echo ""
     echo -e "Config location: ${CYAN}${config_dir}${NC}"
