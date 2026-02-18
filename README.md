@@ -2,11 +2,14 @@
 
 Multi-agent configuration for OpenCode with 7 specialized agents and MCP integration.
 
-```                                                                                                                                               
-▄████▄ ▄▄▄▄  ▄▄▄▄▄ ▄▄  ▄▄ ██ ▄█▀ ▄▄ ▄▄     ▄▄▄  ▄█████  ▄▄▄  ▄▄▄▄  ▄▄▄▄▄ 
-██  ██ ██▄█▀ ██▄▄  ███▄██ ████   ██ ██    ██▀██ ██     ██▀██ ██▀██ ██▄▄  
-▀████▀ ██    ██▄▄▄ ██ ▀██ ██ ▀█▄ ██ ██▄▄▄ ▀███▀ ▀█████ ▀███▀ ████▀ ██▄▄▄ 
-                                                                                                                                     
+```
+▄▄▄▄▄                     ▄▄▄   ▄▄▄     ▄▄        ▄▄▄▄▄▄▄          ▄▄       
+▄███████▄                   ███ ▄███▀ ▀▀  ██       ███▀▀▀▀▀          ██       
+███   ███ ████▄ ▄█▀█▄ ████▄ ███████   ██  ██ ▄███▄ ███      ▄███▄ ▄████ ▄█▀█▄ 
+███▄▄▄███ ██ ██ ██▄█▀ ██ ██ ███▀███▄  ██  ██ ██ ██ ███      ██ ██ ██ ██ ██▄█▀ 
+ ▀█████▀  ████▀ ▀█▄▄▄ ██ ██ ███  ▀███ ██▄ ██ ▀███▀ ▀███████ ▀███▀ ▀████ ▀█▄▄▄ 
+          ██                                                                  
+          ▀▀                                                                  
 ```
 
 ## Quick Start
@@ -15,9 +18,11 @@ Multi-agent configuration for OpenCode with 7 specialized agents and MCP integra
 curl -fsSL https://raw.githubusercontent.com/skogstatarzan/opencode-config/main/install -o install.sh && bash install.sh
 ```
 
-The installer will ask you:
-1. **Installation type**: OpenCode or KiloCode CLI (determines config folder)
-2. **Model selection**: Use defaults or specify custom models
+The installer will ask you to choose:
+- **OpenCode** → Config: `~/.config/opencode`
+- **KiloCode CLI** → Config: `~/.config/kilo`
+
+Models are auto-selected based on your choice. Connect to OpenCode Zen or Kilo Gateway for them to work.
 
 ## Agents
 
