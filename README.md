@@ -23,7 +23,37 @@ The installer will ask you to choose:
 - **OpenCode** → Config: `~/.config/opencode`
 - **KiloCode CLI** → Config: `~/.config/kilo`
 
-Models are auto-selected based on your choice. Connect to OpenCode Zen or Kilo Gateway for them to work.
+Models are auto-selected per agent. Connect to OpenCode Zen or Kilo Gateway for them to work.
+
+### Requirements
+
+- OpenCode or KiloCode CLI installed (`opencode` or `kilo` in PATH)
+- Git for installation
+
+**Linux (Debian/Ubuntu)**
+```bash
+sudo apt update && sudo apt install git
+```
+
+**Linux (Fedora/RHEL)**
+```bash
+sudo dnf install git
+```
+
+**macOS**
+```bash
+brew install git
+```
+
+**Windows (via winget)**
+```bash
+winget install Git.Git
+```
+
+**Windows (via Chocolatey)**
+```bash
+choco install git
+```
 
 ## Agents
 
@@ -39,11 +69,13 @@ Models are auto-selected based on your choice. Connect to OpenCode Zen or Kilo G
 
 ## MCP Servers
 
-| Server | Purpose | API Key |
-|--------|---------|---------|
-| **websearch** | Web search via Exa | `EXA_API_KEY` (optional) |
-| **context7** | Official docs lookup | `CONTEXT7_API_KEY` (optional) |
-| **grep_app** | GitHub code search | None required |
+| Server | Purpose |
+|--------|---------|
+| **websearch** | Web search via Exa |
+| **context7** | Official docs lookup |
+| **grep_app** | GitHub code search |
+
+> **Note**: API keys are added directly in `opencode.json`. See [API Keys](#api-keys) section below.
 
 ## Usage
 
@@ -71,7 +103,11 @@ kilo
 Agent prompts are stored in markdown files with frontmatter:
 
 ```bash
+# For OpenCode
 vim ~/.config/opencode/agents/orchestrator.md
+
+# For KiloCode CLI
+vim ~/.config/kilo/agents/orchestrator.md
 ```
 
 ### Change Models
@@ -90,7 +126,13 @@ You are a custom agent that does X, Y, Z.
 
 ### Add Custom Agent
 
-Create `~/.config/opencode/agents/my-agent.md`:
+```bash
+# For OpenCode
+vim ~/.config/opencode/agents/my-agent.md
+
+# For KiloCode CLI
+vim ~/.config/kilo/agents/my-agent.md
+```
 
 ```markdown
 ---
@@ -124,18 +166,48 @@ skill: true
 ---
 ```
 
-## Environment Variables
+## API Keys
 
-```bash
-# MCP API keys (optional but recommended)
-export EXA_API_KEY="your-key"
-export CONTEXT7_API_KEY="your-key"
+Add API keys directly in `opencode.json`:
+
+```json
+{
+  "mcp": {
+    "websearch": {
+      "headers": {
+        "x-api-key": "your-exa-key"
+      }
+    },
+    "context7": {
+      "headers": {
+        "CONTEXT7_API_KEY": "your-context7-key"
+      }
+    }
+  }
+}
 ```
 
 ## Directory Structure
 
-```
+```bash
+# For OpenCode
 ~/.config/opencode/
+├── opencode.json       # Main configuration
+├── agents/             # Agent prompts with frontmatter
+│   ├── orchestrator.md
+│   ├── explorer.md
+│   ├── oracle.md
+│   ├── librarian.md
+│   ├── designer.md
+│   ├── fixer.md
+│   └── mapper.md
+└── skills/             # Skills
+    ├── cartography/
+    ├── simplify/
+    └── agent-browser/
+
+# For KiloCode CLI
+~/.config/kilo/
 ├── opencode.json       # Main configuration
 ├── agents/             # Agent prompts with frontmatter
 │   ├── orchestrator.md
@@ -162,11 +234,6 @@ export CONTEXT7_API_KEY="your-key"
 | designer | `opencode/gemini-3-flash` | `kilo/google/gemini-3-flash-preview` |
 | fixer | `opencode/minimax-m2.5` | `kilo/minimax/minimax-m2.5` |
 | mapper | `opencode/minimax-m2.5` | `kilo/minimax/minimax-m2.5` |
-
-## Requirements
-
-- OpenCode or KiloCode CLI installed (`opencode` or `kilo` in PATH)
-- Git for installation
 
 ## License
 

@@ -318,6 +318,7 @@ generate_config() {
     template=$(cat << TPLATE
 {
   "\$schema": "https://opencode.ai/config.json",
+  "default_agent": "orchestrator",
   "model": "${model_prefix}/minimax-m2.5",
   "mcp": {
     "websearch": {
