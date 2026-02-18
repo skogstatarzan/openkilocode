@@ -267,38 +267,23 @@ update_agent_models() {
         model_prefix="kilo"
     fi
     
-    # Map agent names to their model configs
-    declare -A model_map
     if [[ "$install_type" == "kilo" ]]; then
-        model_map=(
-            ["orchestrator"]="kilo/z-ai/glm-5"
-            ["explorer"]="kilo/minimax/minimax-m2.5"
-            ["oracle"]="kilo/anthropic/claude-sonnet-4.6"
-            ["librarian"]="kilo/google/gemini-3-flash-preview"
-            ["designer"]="kilo/google/gemini-3-flash-preview"
-            ["fixer"]="kilo/minimax/minimax-m2.5"
-            ["mapper"]="kilo/minimax/minimax-m2.5"
-        )
+        sed -i 's/^model: .*/model: kilo\/z-ai\/glm-5/' "$config_dir/agents/orchestrator.md"
+        sed -i 's/^model: .*/model: kilo\/minimax\/minimax-m2.5/' "$config_dir/agents/explorer.md"
+        sed -i 's/^model: .*/model: kilo\/anthropic\/claude-sonnet-4.6/' "$config_dir/agents/oracle.md"
+        sed -i 's/^model: .*/model: kilo\/google\/gemini-3-flash-preview/' "$config_dir/agents/librarian.md"
+        sed -i 's/^model: .*/model: kilo\/google\/gemini-3-flash-preview/' "$config_dir/agents/designer.md"
+        sed -i 's/^model: .*/model: kilo\/minimax\/minimax-m2.5/' "$config_dir/agents/fixer.md"
+        sed -i 's/^model: .*/model: kilo\/minimax\/minimax-m2.5/' "$config_dir/agents/mapper.md"
     else
-        model_map=(
-            ["orchestrator"]="opencode/glm-5"
-            ["explorer"]="opencode/minimax-m2.5"
-            ["oracle"]="opencode/claude-sonnet-4-6"
-            ["librarian"]="opencode/gemini-3-flash"
-            ["designer"]="opencode/gemini-3-flash"
-            ["fixer"]="opencode/minimax-m2.5"
-            ["mapper"]="opencode/minimax-m2.5"
-        )
+        sed -i 's/^model: .*/model: opencode\/glm-5/' "$config_dir/agents/orchestrator.md"
+        sed -i 's/^model: .*/model: opencode\/minimax-m2.5/' "$config_dir/agents/explorer.md"
+        sed -i 's/^model: .*/model: opencode\/claude-sonnet-4-6/' "$config_dir/agents/oracle.md"
+        sed -i 's/^model: .*/model: opencode\/gemini-3-flash/' "$config_dir/agents/librarian.md"
+        sed -i 's/^model: .*/model: opencode\/gemini-3-flash/' "$config_dir/agents/designer.md"
+        sed -i 's/^model: .*/model: opencode\/minimax-m2.5/' "$config_dir/agents/fixer.md"
+        sed -i 's/^model: .*/model: opencode\/minimax-m2.5/' "$config_dir/agents/mapper.md"
     fi
-    
-    # Update each agent markdown file
-    for agent in "${!model_map[@]}"; do
-        local agent_file="$config_dir/agents/${agent}.md"
-        if [[ -f "$agent_file" ]]; then
-            # Update model in frontmatter using sed
-            sed -i "s/^model: .*/model: ${model_map[$agent]}/" "$agent_file"
-        fi
-    done
 }
 
 # ============================================
@@ -404,7 +389,6 @@ install() {
     echo -e "${GREEN}Downloading OpenKiloCode...${NC}"
     
     if command -v git &> /dev/null; then
-        echo -e "${YELLOW}Running: git clone --depth 1 --branch $REPO_BRANCH $REPO_URL /tmp/openkilocode${NC}"
         git clone --depth 1 --branch "$REPO_BRANCH" "$REPO_URL" /tmp/openkilocode 2>&1 || {
             echo -e "${RED}Failed to clone repository${NC}"
             exit 1
