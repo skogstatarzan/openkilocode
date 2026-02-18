@@ -41,9 +41,7 @@ Most users only need to interact with the orchestrator—it handles delegation a
 curl -LfsSL https://raw.githubusercontent.com/skogstatarzan/openkilocode/main/install -o install.sh && bash install.sh
 ```
 
-The installer will ask you to choose:
-- **OpenCode** → Config: `~/.config/opencode`
-- **KiloCode CLI** → Config: `~/.config/kilo`
+The installer will ask you to choose OpenCode or KiloCode CLI.
 
 Models are auto-selected per agent. Connect to OpenCode Zen or Kilo Gateway for them to work.
 

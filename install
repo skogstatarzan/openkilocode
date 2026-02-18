@@ -188,8 +188,8 @@ prompt_install_type() {
     echo -e "${CYAN}  Installation Type${NC}"
     echo -e "${CYAN}═══════════════════════════════════════════════════════════${NC}"
     echo ""
-    echo -e "  ${BLUE}1)${NC} OpenCode      → Config: ~/.config/opencode"
-    echo -e "  ${BLUE}2)${NC} KiloCode CLI   → Config: ~/.config/kilo"
+    echo -e "  ${BLUE}1)${NC} OpenCode"
+    echo -e "  ${BLUE}2)${NC} KiloCode CLI"
     echo ""
     
     while true; do
@@ -224,9 +224,9 @@ prompt_install_type() {
     
     echo ""
     if [[ "$INSTALL_TYPE" == "kilo" ]]; then
-        echo -e "${YELLOW}add API keys to ~/.config/kilo/opencode.json if experiencing problems${NC}"
+        echo -e "${YELLOW}add API keys to opencode.json if experiencing problems${NC}"
     else
-        echo -e "${YELLOW}add API keys to ~/.config/opencode/opencode.json if experiencing problems${NC}"
+        echo -e "${YELLOW}add API keys to opencode.json if experiencing problems${NC}"
     fi
 }
 
