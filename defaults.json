@@ -1,0 +1,11 @@
+{
+  "default_model": "opencode/minimax-m2.5",
+  "agents": {
+    "orchestrator": "opencode/glm-5",
+    "explorer": "opencode/minimax-m2.5",
+    "oracle": "opencode/claude-sonnet-4-6",
+    "librarian": "opencode/gemini-3-flash",
+    "designer": "opencode/gemini-3-flash",
+    "fixer": "opencode/minimax-m2.5"
+  }
+}
