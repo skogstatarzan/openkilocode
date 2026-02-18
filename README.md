@@ -117,7 +117,7 @@ Skills are reusable instructions that can be enabled per agent.
 
 ## API Keys
 
-Add API keys directly in `opencode.json`:
+Add API keys in `opencode.json` if experiencing issues (optional):
 
 ```json
 {
