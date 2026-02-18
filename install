@@ -24,6 +24,11 @@ USE_DEFAULTS=true
 CUSTOM_MODELS=""
 INSTALL_TYPE="opencode"  # "opencode" or "kilo"
 
+# Check if running interactively
+is_interactive() {
+    [[ -t 0 ]]
+}
+
 # ============================================
 # OS Detection
 # ============================================
@@ -150,6 +155,13 @@ EOF
 # ============================================
 
 prompt_install_type() {
+    # Use defaults if not interactive
+    if ! is_interactive; then
+        echo -e "${YELLOW}Running in non-interactive mode. Using defaults: OpenCode${NC}"
+        INSTALL_TYPE="opencode"
+        return
+    fi
+    
     echo -e "\n${CYAN}═══════════════════════════════════════════════════════════${NC}"
     echo -e "${CYAN}  Installation Type${NC}"
     echo -e "${CYAN}═══════════════════════════════════════════════════════════${NC}"
@@ -183,6 +195,13 @@ prompt_install_type() {
 }
 
 prompt_model_choice() {
+    # Use defaults if not interactive
+    if ! is_interactive; then
+        echo -e "${YELLOW}Running in non-interactive mode. Using default models.${NC}"
+        USE_DEFAULTS=true
+        return
+    fi
+    
     echo -e "\n${CYAN}═══════════════════════════════════════════════════════════${NC}"
     echo -e "${CYAN}  Model Selection${NC}"
     echo -e "${CYAN}═══════════════════════════════════════════════════════════${NC}"
