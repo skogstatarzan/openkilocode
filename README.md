@@ -216,6 +216,7 @@ Add API keys directly in `opencode.json`:
     ├── cartography/
     ├── simplify/
     └── agent-browser/
+```
 
 > **Note**: On Windows, `~/.config` translates to `%USERPROFILE%\.config\`
 
