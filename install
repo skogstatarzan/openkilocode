@@ -4,7 +4,7 @@
 # Multi-agent configuration for OpenCode
 #
 # Usage:
-#   curl -fsSL https://raw.githubusercontent.com/simonwep/opencode-pantheon/main/install | bash
+#   curl -fsSL https://raw.githubusercontent.com/skogstatarzan/openkilocode/main/install | bash
 #
 
 set -e
@@ -18,7 +18,7 @@ CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
 # Default values
-REPO_URL="https://github.com/skogstatarzan/opencode-config"
+REPO_URL="https://github.com/skogstatarzan/openkilocode"
 REPO_BRANCH="main"
 USE_DEFAULTS=true
 CUSTOM_MODELS=""
@@ -142,7 +142,7 @@ Options:
 
 Examples:
   # Interactive installation (will prompt for choices)
-  curl -fsSL https://raw.githubusercontent.com/simonwep/opencode-pantheon/main/install | bash
+  curl -fsSL https://raw.githubusercontent.com/skogstatarzan/openkilocode/main/install | bash
 
   # Use default models
   curl -fsSL ... | bash -s -- --defaults
