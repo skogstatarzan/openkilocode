@@ -33,4 +33,5 @@ Thumbs.db
 
 # Misc
 *.log
-*.tmptelemetry-id
+*.tmp
+telemetry-id
