@@ -6,6 +6,7 @@
     "oracle": "opencode/claude-sonnet-4-6",
     "librarian": "opencode/gemini-3-flash",
     "designer": "opencode/gemini-3-flash",
-    "fixer": "opencode/minimax-m2.5"
+    "fixer": "opencode/minimax-m2.5",
+    "mapper": "opencode/minimax-m2.5"
   }
 }

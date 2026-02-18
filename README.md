@@ -1,6 +1,6 @@
 # OpenCode Pantheon
 
-Multi-agent configuration for OpenCode with 6 specialized agents and MCP integration.
+Multi-agent configuration for OpenCode with 7 specialized agents and MCP integration.
 
 ```
   ____                 _             ____             _   _            
@@ -8,21 +8,19 @@ Multi-agent configuration for OpenCode with 6 specialized agents and MCP integra
 | | | | '_ ` _ \| '_ \| |/ / | | | | |  | | '__| | | | __| |/ _ \/ __| 
 | |_| | | | | | | |_) |   <| |_| | | |__| | |  | |_| | |_| |  __/\__ \ 
  \___/|_| |_| |_| .__/|_|\_\\__, |  \____/|_|   \__, |\__|_|\___||___/ 
-                |_|         |___/               |___/                    
+                 |_|         |___/               |___/                    
 ```
 
 ## Quick Start
 
 ```bash
-# Interactive installation (choose models)
+# Interactive installation (will prompt for choices)
 curl -fsSL https://raw.githubusercontent.com/skogstatarzan/opencode-config/main/install | bash
-
-# Use default models
-curl -fsSL https://raw.githubusercontent.com/skogstatarzan/opencode-config/main/install | bash -s -- --defaults
-
-# Specify custom models
-curl -fsSL ... | bash -s -- --models "orchestrator=opencode/glm-5,fixer=opencode/minimax-m2.5"
 ```
+
+The installer will ask you:
+1. **Installation type**: OpenCode or KiloCode CLI (determines config folder)
+2. **Model selection**: Use defaults or specify custom models
 
 ## Agents
 
@@ -34,6 +32,7 @@ curl -fsSL ... | bash -s -- --models "orchestrator=opencode/glm-5,fixer=opencode
 | **librarian** | Research | `subagent` | Documentation lookup |
 | **designer** | UI/UX | `subagent` | Visual polish |
 | **fixer** | Builder | `subagent` | Fast implementation |
+| **mapper** | Cartography | `subagent` | Repository mapping |
 
 ## MCP Servers
 
@@ -49,6 +48,9 @@ curl -fsSL ... | bash -s -- --models "orchestrator=opencode/glm-5,fixer=opencode
 # Start OpenCode
 opencode
 
+# Or for KiloCode CLI
+kilo
+
 # Switch agents with Tab
 # Or invoke subagents directly:
 @explorer find all API routes
@@ -56,6 +58,7 @@ opencode
 @oracle review this architecture
 @designer improve the dashboard styling
 @fixer implement the auth module
+@mapper map the codebase structure
 ```
 
 ## Configuration
@@ -131,14 +134,14 @@ export CONTEXT7_API_KEY="your-key"
 ```
 ~/.config/opencode/
 ├── opencode.json       # Main configuration
-├── defaults.json       # Default model settings
 ├── agents/             # Agent prompts (editable)
 │   ├── orchestrator.md
 │   ├── explorer.md
 │   ├── oracle.md
 │   ├── librarian.md
 │   ├── designer.md
-│   └── fixer.md
+│   ├── fixer.md
+│   └── mapper.md
 └── skills/             # Skills
     ├── cartography/
     ├── simplify/
@@ -155,10 +158,11 @@ export CONTEXT7_API_KEY="your-key"
 | librarian | `opencode/gemini-3-flash` |
 | designer | `opencode/gemini-3-flash` |
 | fixer | `opencode/minimax-m2.5` |
+| mapper | `opencode/minimax-m2.5` |
 
 ## Requirements
 
-- OpenCode installed (`opencode` in PATH)
+- OpenCode or KiloCode CLI installed (`opencode` or `kilo` in PATH)
 - Git for installation
 
 ## License

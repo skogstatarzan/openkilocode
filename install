@@ -4,9 +4,7 @@
 # Multi-agent configuration for OpenCode
 #
 # Usage:
-#   curl -fsSL https://raw.githubusercontent.com/USER/opencode-pantheon/main/install | bash
-#   curl -fsSL ... | bash -s -- --defaults
-#   curl -fsSL ... | bash -s -- --models "orchestrator=model1,explorer=model2,..."
+#   curl -fsSL https://raw.githubusercontent.com/simonwep/opencode-pantheon/main/install | bash
 #
 
 set -e
@@ -22,9 +20,9 @@ NC='\033[0m' # No Color
 # Default values
 REPO_URL="https://github.com/simonwep/opencode-pantheon"
 REPO_BRANCH="main"
-USE_DEFAULTS=false
+USE_DEFAULTS=true
 CUSTOM_MODELS=""
-INTERACTIVE=true
+INSTALL_TYPE="opencode"  # "opencode" or "kilo"
 
 # ============================================
 # OS Detection
@@ -53,27 +51,44 @@ detect_os() {
 # ============================================
 
 get_config_dir() {
-    local os="$1"
+    local install_type="$1"
+    local os="$2"
     
     case "$os" in
         linux|wsl|macos)
-            if [[ -n "$XDG_CONFIG_HOME" ]]; then
-                echo "$XDG_CONFIG_HOME/opencode"
+            if [[ "$install_type" == "kilo" ]]; then
+                if [[ -n "$XDG_CONFIG_HOME" ]]; then
+                    echo "$XDG_CONFIG_HOME/kilo"
+                else
+                    echo "$HOME/.config/kilo"
+                fi
             else
-                echo "$HOME/.config/opencode"
+                if [[ -n "$XDG_CONFIG_HOME" ]]; then
+                    echo "$XDG_CONFIG_HOME/opencode"
+                else
+                    echo "$HOME/.config/opencode"
+                fi
             fi
             ;;
         windows)
-            echo "$APPDATA/opencode"
+            if [[ "$install_type" == "kilo" ]]; then
+                echo "$APPDATA/kilo"
+            else
+                echo "$APPDATA/opencode"
+            fi
             ;;
         *)
-            echo "$HOME/.config/opencode"
+            if [[ "$install_type" == "kilo" ]]; then
+                echo "$HOME/.config/kilo"
+            else
+                echo "$HOME/.config/opencode"
+            fi
             ;;
     esac
 }
 
 # ============================================
-# Argument Parsing
+# Argument Parsing (for backward compatibility)
 # ============================================
 
 parse_args() {
@@ -81,16 +96,15 @@ parse_args() {
         case "$1" in
             --defaults|-d)
                 USE_DEFAULTS=true
-                INTERACTIVE=false
                 shift
                 ;;
             --models|-m)
+                USE_DEFAULTS=false
                 CUSTOM_MODELS="$2"
-                INTERACTIVE=false
                 shift 2
                 ;;
             --non-interactive|-y)
-                INTERACTIVE=false
+                # Keep using defaults in non-interactive mode
                 shift
                 ;;
             --help|-h)
@@ -112,16 +126,15 @@ OpenCode Pantheon Installer
 
 Usage:
   curl -fsSL <url>/install | bash
-  curl -fsSL <url>/install | bash -s -- [OPTIONS]
 
 Options:
-  -d, --defaults          Use default models without prompting
-  -m, --models MODELS     Specify models (format: agent=model,agent=model)
-  -y, --non-interactive   Skip all prompts, use defaults
+  -d, --defaults          Use default models (default behavior)
+  -m, --models MODELS     Specify custom models (format: agent=model,agent=model)
+  -y, --non-interactive   Non-interactive mode (use defaults)
   -h, --help              Show this help message
 
 Examples:
-  # Interactive installation
+  # Interactive installation (will prompt for choices)
   curl -fsSL https://raw.githubusercontent.com/simonwep/opencode-pantheon/main/install | bash
 
   # Use default models
@@ -130,6 +143,80 @@ Examples:
   # Specify custom models
   curl -fsSL ... | bash -s -- --models "orchestrator=opencode/gpt-5.1-codex,fixer=opencode/gemini-3-flash"
 EOF
+}
+
+# ============================================
+# Interactive Prompts
+# ============================================
+
+prompt_install_type() {
+    echo -e "\n${CYAN}═══════════════════════════════════════════════════════════${NC}"
+    echo -e "${CYAN}  Installation Type${NC}"
+    echo -e "${CYAN}═══════════════════════════════════════════════════════════${NC}"
+    echo ""
+    echo -e "  ${BLUE}1)${NC} OpenCode      → Config: ~/.config/opencode"
+    echo -e "  ${BLUE}2)${NC} KiloCode CLI   → Config: ~/.config/kilo"
+    echo ""
+    echo -e "  The only difference is where config files are stored."
+    echo ""
+    
+    while true; do
+        read -rp "$(echo -e "${GREEN}Choose [1-2, default: 1]: ${NC}")" choice
+        choice="${choice:-1}"
+        
+        case "$choice" in
+            1)
+                INSTALL_TYPE="opencode"
+                break
+                ;;
+            2)
+                INSTALL_TYPE="kilo"
+                break
+                ;;
+            *)
+                echo -e "${YELLOW}Please enter 1 or 2${NC}"
+                ;;
+        esac
+    done
+    
+    echo -e "${GREEN}Selected: $INSTALL_TYPE${NC}"
+}
+
+prompt_model_choice() {
+    echo -e "\n${CYAN}═══════════════════════════════════════════════════════════${NC}"
+    echo -e "${CYAN}  Model Selection${NC}"
+    echo -e "${CYAN}═══════════════════════════════════════════════════════════${NC}"
+    echo ""
+    echo -e "  ${BLUE}1)${NC} Use default models"
+    echo -e "  ${BLUE}2)${NC} Specify custom models"
+    echo ""
+    
+    while true; do
+        read -rp "$(echo -e "${GREEN}Choose [1-2, default: 1]: ${NC}")" choice
+        choice="${choice:-1}"
+        
+        case "$choice" in
+            1)
+                USE_DEFAULTS=true
+                break
+                ;;
+            2)
+                USE_DEFAULTS=false
+                break
+                ;;
+            *)
+                echo -e "${YELLOW}Please enter 1 or 2${NC}"
+                ;;
+        esac
+    done
+    
+    if [[ "$USE_DEFAULTS" == "false" ]]; then
+        echo ""
+        echo -e "${BLUE}Enter models in format: agent=model,agent=model${NC}"
+        echo -e "${YELLOW}Example: orchestrator=opencode/glm-5,fixer=opencode/minimax-m2.5${NC}"
+        echo ""
+        read -rp "$(echo -e "${GREEN}Models: ${NC}")" CUSTOM_MODELS
+    fi
 }
 
 # ============================================
@@ -161,6 +248,7 @@ oracle=opencode/claude-sonnet-4-6
 librarian=opencode/gemini-3-flash
 designer=opencode/gemini-3-flash
 fixer=opencode/minimax-m2.5
+mapper=opencode/minimax-m2.5
 default=opencode/minimax-m2.5
 EOF
 )
@@ -175,50 +263,8 @@ EOF
         return
     fi
     
-    # Use defaults if non-interactive
-    if [[ "$INTERACTIVE" == "false" ]]; then
-        echo "$defaults"
-        return
-    fi
-    
-    # Interactive selection
-    echo -e "\n${CYAN}═══════════════════════════════════════════════════════════${NC}"
-    echo -e "${CYAN}  Model Selection${NC}"
-    echo -e "${CYAN}═══════════════════════════════════════════════════════════${NC}"
-    
-    if [[ -n "$available_models" ]]; then
-        echo -e "\n${BLUE}Available models:${NC}"
-        echo "$available_models" | head -20
-        echo -e "${YELLOW}... (showing first 20)${NC}"
-    else
-        echo -e "\n${YELLOW}Note: Run 'opencode models' to see available models${NC}"
-    fi
-    
-    echo -e "\n${BLUE}Default models:${NC}"
-    echo "$defaults" | while read -r line; do
-        echo "  $line"
-    done
-    
-    echo -e "\n${YELLOW}Press Enter to use defaults, or type models in format: agent=model${NC}"
-    echo -e "${YELLOW}Example: orchestrator=opencode/gpt-5.1-codex,fixer=opencode/gemini-3-flash${NC}"
-    echo ""
-    read -rp "$(echo -e "${GREEN}Models [Enter for defaults]: ${NC}")" user_input
-    
-    if [[ -z "$user_input" ]]; then
-        echo "$defaults"
-    else
-        # Parse user input and merge with defaults
-        echo "$defaults" | while read -r line; do
-            agent="${line%%=*}"
-            # Check if user provided this agent
-            user_model=$(echo "$user_input" | grep -oE "${agent}=[^,]+" | cut -d= -f2)
-            if [[ -n "$user_model" ]]; then
-                echo "${agent}=${user_model}"
-            else
-                echo "$line"
-            fi
-        done
-    fi
+    # Use defaults
+    echo "$defaults"
 }
 
 # ============================================
@@ -228,12 +274,18 @@ EOF
 generate_config() {
     local models="$1"
     local config_dir="$2"
-    local template
+    local install_type="$3"
     
-    template=$(cat << 'TEMPLATE'
+    # Adjust model prefix based on install type
+    local model_prefix="opencode"
+    if [[ "$install_type" == "kilo" ]]; then
+        model_prefix="kilo"
+    fi
+    
+    template=$(cat << TPLATE
 {
-  "$schema": "https://opencode.ai/config.json",
-  "model": "{{DEFAULT_MODEL}}",
+  "\$schema": "https://opencode.ai/config.json",
+  "model": "${model_prefix}/minimax-minimax-m2.5",
   "mcp": {
     "websearch": {
       "type": "remote",
@@ -263,13 +315,23 @@ generate_config() {
     "orchestrator": {
       "description": "AI coding orchestrator that delegates tasks to specialist agents for optimal quality, speed, and cost",
       "mode": "primary",
-      "model": "{{ORCHESTRATOR_MODEL}}",
+      "model": "${model_prefix}/glm-5",
       "temperature": 0.1,
       "prompt": "{file:./agents/orchestrator.md}",
       "tools": {
+        "task": true,
+        "skill": true,
+        "bash": true,
+        "read": true,
+        "glob": true,
+        "grep": true,
         "websearch_*": true
       },
       "permission": {
+        "question": "allow",
+        "skill": {
+          "*": "allow"
+        },
         "task": {
           "*": "allow"
         }
@@ -278,10 +340,17 @@ generate_config() {
     "explorer": {
       "description": "Fast codebase search and pattern matching. Use for finding files, locating code patterns, and answering 'where is X?' questions.",
       "mode": "subagent",
-      "model": "{{EXPLORER_MODEL}}",
+      "model": "${model_prefix}/minimax-minimax-m2.5",
       "temperature": 0.1,
       "prompt": "{file:./agents/explorer.md}",
+      "permission": {
+        "task": {}
+      },
       "tools": {
+        "grep": true,
+        "glob": true,
+        "ast_grep_search": true,
+        "read": true,
         "write": false,
         "edit": false,
         "bash": false
@@ -290,20 +359,32 @@ generate_config() {
     "oracle": {
       "description": "Strategic technical advisor. Use for architecture decisions, complex debugging, code review, and engineering guidance.",
       "mode": "subagent",
-      "model": "{{ORACLE_MODEL}}",
+      "model": "${model_prefix}/anthropic-claude-sonnet-4.6",
       "temperature": 0.1,
       "prompt": "{file:./agents/oracle.md}",
+      "permission": {
+        "task": {}
+      },
       "tools": {
+        "read": true,
+        "grep": true,
+        "glob": true,
+        "lsp_goto_definition": true,
+        "lsp_find_references": true,
         "write": false,
-        "edit": false
+        "edit": false,
+        "bash": false
       }
     },
     "librarian": {
       "description": "External documentation and library research. Use for official docs lookup, GitHub examples, and understanding library internals.",
       "mode": "subagent",
-      "model": "{{LIBRARIAN_MODEL}}",
+      "model": "${model_prefix}/google-gemini-3-flash-preview",
       "temperature": 0.1,
       "prompt": "{file:./agents/librarian.md}",
+      "permission": {
+        "task": {}
+      },
       "tools": {
         "websearch_*": true,
         "context7_*": true,
@@ -313,40 +394,64 @@ generate_config() {
     "designer": {
       "description": "UI/UX design and implementation. Use for styling, responsive design, component architecture and visual polish.",
       "mode": "subagent",
-      "model": "{{DESIGNER_MODEL}}",
+      "model": "${model_prefix}/google-gemini-3-flash-preview",
       "temperature": 0.7,
-      "prompt": "{file:./agents/designer.md}"
+      "prompt": "{file:./agents/designer.md}",
+      "permission": {
+        "task": {
+          "explorer": "allow"
+        }
+      },
+      "tools": {
+        "read": true,
+        "write": true,
+        "edit": true,
+        "glob": true,
+        "grep": true
+      }
     },
     "fixer": {
       "description": "Fast implementation specialist. Receives complete context and task spec, executes code changes efficiently.",
       "mode": "subagent",
-      "model": "{{FIXER_MODEL}}",
+      "model": "${model_prefix}/minimax-minimax-m2.5",
       "temperature": 0.2,
-      "prompt": "{file:./agents/fixer.md}"
+      "prompt": "{file:./agents/fixer.md}",
+      "permission": {
+        "task": {
+          "explorer": "allow"
+        }
+      },
+      "tools": {
+        "read": true,
+        "write": true,
+        "edit": true,
+        "glob": true,
+        "grep": true,
+        "bash": true,
+        "lsp_diagnostics": true
+      }
+    },
+    "mapper": {
+      "description": "Repository mapper for cartography. Creates and updates codemap.md files to document codebase architecture.",
+      "mode": "subagent",
+      "model": "${model_prefix}/minimax-minimax-m2.5",
+      "temperature": 0.1,
+      "prompt": "{file:./agents/mapper.md}",
+      "permission": {
+        "task": {}
+      },
+      "tools": {
+        "read": true,
+        "write": true,
+        "edit": true,
+        "glob": true,
+        "grep": true
+      }
     }
   }
 }
-TEMPLATE
+TPLATE
 )
-    
-    # Replace placeholders
-    local default_model orchestrator_model explorer_model oracle_model librarian_model designer_model fixer_model
-    
-    default_model=$(echo "$models" | grep "^default=" | cut -d= -f2)
-    orchestrator_model=$(echo "$models" | grep "^orchestrator=" | cut -d= -f2)
-    explorer_model=$(echo "$models" | grep "^explorer=" | cut -d= -f2)
-    oracle_model=$(echo "$models" | grep "^oracle=" | cut -d= -f2)
-    librarian_model=$(echo "$models" | grep "^librarian=" | cut -d= -f2)
-    designer_model=$(echo "$models" | grep "^designer=" | cut -d= -f2)
-    fixer_model=$(echo "$models" | grep "^fixer=" | cut -d= -f2)
-    
-    template="${template//\{\{DEFAULT_MODEL\}\}/$default_model}"
-    template="${template//\{\{ORCHESTRATOR_MODEL\}\}/$orchestrator_model}"
-    template="${template//\{\{EXPLORER_MODEL\}\}/$explorer_model}"
-    template="${template//\{\{ORACLE_MODEL\}\}/$oracle_model}"
-    template="${template//\{\{LIBRARIAN_MODEL\}\}/$librarian_model}"
-    template="${template//\{\{DESIGNER_MODEL\}\}/$designer_model}"
-    template="${template//\{\{FIXER_MODEL\}\}/$fixer_model}"
     
     echo "$template"
 }
@@ -362,14 +467,30 @@ install() {
     os=$(detect_os)
     echo -e "${GREEN}Detected OS: ${os}${NC}"
     
+    # Parse command line args first (for backward compatibility)
+    parse_args "$@"
+    
+    # Interactive prompts if not set via args
+    if [[ -z "$CUSTOM_MODELS" ]]; then
+        prompt_install_type
+        prompt_model_choice
+    fi
+    
     # Get config directory
-    config_dir=$(get_config_dir "$os")
+    config_dir=$(get_config_dir "$INSTALL_TYPE" "$os")
     echo -e "${GREEN}Config directory: ${config_dir}${NC}"
     
-    # Check if OpenCode is installed
-    if ! command -v opencode &> /dev/null; then
-        echo -e "${YELLOW}Warning: OpenCode is not installed or not in PATH${NC}"
-        echo -e "${YELLOW}Install OpenCode first: https://opencode.ai${NC}"
+    # Check if OpenCode/Kilo is installed
+    if [[ "$INSTALL_TYPE" == "kilo" ]]; then
+        if ! command -v kilo &> /dev/null; then
+            echo -e "${YELLOW}Warning: KiloCode CLI is not installed or not in PATH${NC}"
+            echo -e "${YELLOW}Install KiloCode CLI first${NC}"
+        fi
+    else
+        if ! command -v opencode &> /dev/null; then
+            echo -e "${YELLOW}Warning: OpenCode is not installed or not in PATH${NC}"
+            echo -e "${YELLOW}Install OpenCode first: https://opencode.ai${NC}"
+        fi
     fi
     
     # Backup existing config
@@ -391,9 +512,8 @@ install() {
             exit 1
         }
         
-        # Copy files (excluding .git)
-        cp -r /tmp/opencode-pantheon/{agents,skills,commands} "$config_dir/" 2>/dev/null || true
-        cp /tmp/opencode-pantheon/defaults.json "$config_dir/" 2>/dev/null || true
+        # Copy files (excluding .git and install script)
+        cp -r /tmp/opencode-pantheon/{agents,skills} "$config_dir/" 2>/dev/null || true
         rm -rf /tmp/opencode-pantheon
     else
         echo -e "${RED}Git is required for installation${NC}"
@@ -405,7 +525,7 @@ install() {
     
     # Generate config
     echo -e "${GREEN}Generating configuration...${NC}"
-    generate_config "$models" "$config_dir" > "$config_dir/opencode.json"
+    generate_config "$models" "$config_dir" "$INSTALL_TYPE" > "$config_dir/opencode.json"
     
     # Success message
     echo -e "\n${GREEN}═══════════════════════════════════════════════════════════${NC}"
@@ -421,13 +541,19 @@ install() {
     echo "  • librarian    - Documentation research"
     echo "  • designer     - UI/UX specialist"
     echo "  • fixer        - Implementation specialist"
+    echo "  • mapper       - Repository mapping"
     echo ""
     echo -e "${BLUE}MCP Servers:${NC}"
     echo "  • websearch  - Web search (set EXA_API_KEY)"
     echo "  • context7   - Docs lookup (set CONTEXT7_API_KEY)"
     echo "  • grep_app   - GitHub code search"
     echo ""
-    echo -e "${YELLOW}Run 'opencode' to start!${NC}"
+    
+    if [[ "$INSTALL_TYPE" == "kilo" ]]; then
+        echo -e "${YELLOW}Run 'kilo' to start!${NC}"
+    else
+        echo -e "${YELLOW}Run 'opencode' to start!${NC}"
+    fi
 }
 
 # ============================================
@@ -442,12 +568,11 @@ main() {
 | | | | '_ ` _ \| '_ \| |/ / | | | | |  | | '__| | | | __| |/ _ \/ __| 
 | |_| | | | | | | |_) |   <| |_| | | |__| | |  | |_| | |_| |  __/\__ \ 
  \___/|_| |_| |_| .__/|_|\_\\__, |  \____/|_|   \__, |\__|_|\___||___/ 
-                |_|         |___/               |___/                    
+                 |_|         |___/               |___/                    
 BANNER
     echo -e "${NC}"
     
-    parse_args "$@"
-    install
+    install "$@"
 }
 
 main "$@"
