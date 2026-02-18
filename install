@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #
 # OpenKiloCode Installer
-# Multi-agent configuration for OpenCode
+# Multi-agent configuration for OpenCode and KiloCode CLI
 #
 # Usage:
 #   curl -fsSL https://raw.githubusercontent.com/skogstatarzan/openkilocode/main/install | bash
@@ -15,6 +15,7 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 CYAN='\033[0;36m'
+BOLD='\033[1m'
 NC='\033[0m' # No Color
 
 # Default values
@@ -25,6 +26,9 @@ CUSTOM_MODELS=""
 INSTALL_TYPE="opencode"  # "opencode" or "kilo"
 EXA_API_KEY=""
 CONTEXT7_API_KEY=""
+
+# Global OS variable
+OS=""
 
 # Check if running interactively
 is_interactive() {
@@ -51,6 +55,23 @@ detect_os() {
     fi
     
     echo "$OS"
+}
+
+# Detect Linux distribution
+detect_linux_distro() {
+    if [[ -f /etc/debian_version ]]; then
+        echo "debian"
+    elif [[ -f /etc/fedora-release ]]; then
+        echo "fedora"
+    elif [[ -f /etc/redhat-release ]]; then
+        echo "rhel"
+    elif command -v apt &> /dev/null; then
+        echo "debian"
+    elif command -v dnf &> /dev/null; then
+        echo "fedora"
+    else
+        echo "unknown"
+    fi
 }
 
 # ============================================
@@ -173,23 +194,569 @@ EOF
 }
 
 # ============================================
+# Dependency Checking
+# ============================================
+
+# Check if a command exists
+check_command() {
+    command -v "$1" &> /dev/null
+}
+
+# Get version of a command (for display)
+get_version() {
+    local cmd="$1"
+    case "$cmd" in
+        git)
+            git --version 2>/dev/null | awk '{print $3}' || echo "unknown"
+            ;;
+        node)
+            node --version 2>/dev/null || echo "unknown"
+            ;;
+        npm)
+            npm --version 2>/dev/null || echo "unknown"
+            ;;
+        brew)
+            brew --version 2>/dev/null | head -1 | awk '{print $2}' || echo "unknown"
+            ;;
+        winget)
+            winget --version 2>/dev/null | sed 's/v//' || echo "unknown"
+            ;;
+        choco)
+            choco --version 2>/dev/null || echo "unknown"
+            ;;
+        opencode)
+            opencode --version 2>/dev/null || echo "installed"
+            ;;
+        kilo)
+            kilo --version 2>/dev/null || echo "installed"
+            ;;
+        agent-browser)
+            agent-browser --version 2>/dev/null || echo "installed"
+            ;;
+        *)
+            echo "installed"
+            ;;
+    esac
+}
+
+# Print dependency status
+print_status() {
+    local name="$1"
+    local installed="$2"
+    local version="$3"
+    local required="$4"
+    
+    if [[ "$installed" == "true" ]]; then
+        printf "  ${GREEN}✓${NC} %-20s %s\n" "$name" "($version)"
+    else
+        if [[ "$required" == "true" ]]; then
+            printf "  ${RED}✗${NC} %-20s %s\n" "$name" "(required)"
+        else
+            printf "  ${YELLOW}○${NC} %-20s %s\n" "$name" "(optional)"
+        fi
+    fi
+}
+
+# ============================================
+# Package Manager Detection
+# ============================================
+
+detect_package_manager() {
+    case "$OS" in
+        macos)
+            if check_command brew; then
+                echo "brew"
+            else
+                echo "none"
+            fi
+            ;;
+        linux|wsl)
+            local distro
+            distro=$(detect_linux_distro)
+            case "$distro" in
+                debian)
+                    echo "apt"
+                    ;;
+                fedora|rhel)
+                    echo "dnf"
+                    ;;
+                *)
+                    if check_command apt; then
+                        echo "apt"
+                    elif check_command dnf; then
+                        echo "dnf"
+                    else
+                        echo "none"
+                    fi
+                    ;;
+            esac
+            ;;
+        windows)
+            if check_command winget; then
+                echo "winget"
+            elif check_command choco; then
+                echo "choco"
+            else
+                echo "none"
+            fi
+            ;;
+        *)
+            echo "none"
+            ;;
+    esac
+}
+
+# ============================================
+# Installation Functions
+# ============================================
+
+# Install Homebrew on macOS
+install_homebrew() {
+    echo -e "\n${CYAN}═══════════════════════════════════════════════════════════${NC}"
+    echo -e "${CYAN}  Homebrew Installation Required${NC}"
+    echo -e "${CYAN}═══════════════════════════════════════════════════════════${NC}"
+    echo ""
+    echo -e "${YELLOW}Homebrew is required to install packages on macOS.${NC}"
+    echo ""
+    echo "Please open a new terminal window and run:"
+    echo ""
+    echo -e "  ${BOLD}/bin/bash -c \"\$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)\"${NC}"
+    echo ""
+    echo "Follow the prompts:"
+    echo "  1. Press RETURN when asked"
+    echo "  2. Enter your password when asked (for sudo)"
+    echo "  3. Wait for installation to complete (2-10 minutes)"
+    echo "  4. Run any 'eval' commands shown at the end (for PATH)"
+    echo ""
+    read -rp "Press Enter when Homebrew installation is complete..."
+    
+    # Verify installation
+    if check_command brew; then
+        echo -e "${GREEN}✓ Homebrew detected!${NC}"
+        return 0
+    else
+        echo -e "${RED}Homebrew still not found. Please complete the installation and restart this script.${NC}"
+        return 1
+    fi
+}
+
+# Install Chocolatey on Windows
+install_chocolatey() {
+    echo -e "\n${CYAN}═══════════════════════════════════════════════════════════${NC}"
+    echo -e "${CYAN}  Chocolatey Installation Required${NC}"
+    echo -e "${CYAN}═══════════════════════════════════════════════════════════${NC}"
+    echo ""
+    echo -e "${YELLOW}Neither winget nor Chocolatey is installed.${NC}"
+    echo ""
+    echo "Please open PowerShell as Administrator and run:"
+    echo ""
+    echo -e "  ${BOLD}Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))${NC}"
+    echo ""
+    echo "After installation, close and reopen your terminal."
+    echo ""
+    read -rp "Press Enter when Chocolatey installation is complete..."
+    
+    # Verify installation
+    if check_command choco; then
+        echo -e "${GREEN}✓ Chocolatey detected!${NC}"
+        return 0
+    else
+        echo -e "${RED}Chocolatey still not found. Please complete the installation and restart this script.${NC}"
+        return 1
+    fi
+}
+
+# Install Git
+install_git() {
+    local pkg_manager="$1"
+    
+    echo -e "${BLUE}Installing Git...${NC}"
+    
+    case "$pkg_manager" in
+        brew)
+            brew install git
+            ;;
+        apt)
+            sudo apt update && sudo apt install -y git
+            ;;
+        dnf)
+            sudo dnf install -y git
+            ;;
+        winget)
+            winget install --id Git.Git --accept-source-agreements --accept-package-agreements
+            ;;
+        choco)
+            choco install git -y
+            ;;
+        *)
+            echo -e "${RED}No package manager available to install Git.${NC}"
+            return 1
+            ;;
+    esac
+    
+    # Verify
+    if check_command git; then
+        echo -e "${GREEN}✓ Git installed successfully${NC}"
+        return 0
+    else
+        echo -e "${RED}Failed to install Git${NC}"
+        return 1
+    fi
+}
+
+# Install Node.js and npm
+install_nodejs() {
+    local pkg_manager="$1"
+    
+    echo -e "${BLUE}Installing Node.js and npm...${NC}"
+    
+    case "$pkg_manager" in
+        brew)
+            brew install node
+            ;;
+        apt)
+            sudo apt update && sudo apt install -y nodejs npm
+            ;;
+        dnf)
+            sudo dnf install -y nodejs npm
+            ;;
+        winget)
+            winget install --id OpenJS.NodeJS.LTS --accept-source-agreements --accept-package-agreements
+            ;;
+        choco)
+            choco install nodejs -y
+            ;;
+        *)
+            echo -e "${RED}No package manager available to install Node.js.${NC}"
+            return 1
+            ;;
+    esac
+    
+    # Refresh PATH for Windows
+    if [[ "$OS" == "windows" ]]; then
+        export PATH="$PATH:/c/Program Files/nodejs"
+    fi
+    
+    # Verify
+    if check_command npm; then
+        echo -e "${GREEN}✓ Node.js and npm installed successfully${NC}"
+        return 0
+    else
+        echo -e "${RED}Failed to install Node.js${NC}"
+        return 1
+    fi
+}
+
+# Install agent-browser
+install_agent_browser() {
+    echo -e "${BLUE}Installing agent-browser...${NC}"
+    
+    npm install -g agent-browser
+    
+    # Run agent-browser install
+    agent-browser install 2>/dev/null || true
+    
+    if check_command agent-browser; then
+        echo -e "${GREEN}✓ agent-browser installed successfully${NC}"
+        return 0
+    else
+        echo -e "${YELLOW}agent-browser installed but may need additional setup${NC}"
+        return 0
+    fi
+}
+
+# Install OpenCode
+install_opencode() {
+    echo -e "${BLUE}Installing OpenCode...${NC}"
+    
+    if [[ "$OS" == "windows" ]]; then
+        npm install -g opencode-ai@latest
+    else
+        curl -fsSL https://opencode.ai/install | bash
+    fi
+    
+    # Refresh PATH
+    hash -r 2>/dev/null || true
+    
+    if check_command opencode; then
+        echo -e "${GREEN}✓ OpenCode installed successfully${NC}"
+        return 0
+    else
+        echo -e "${YELLOW}OpenCode installed. You may need to restart your terminal.${NC}"
+        return 0
+    fi
+}
+
+# Install KiloCode CLI
+install_kilocode() {
+    echo -e "${BLUE}Installing KiloCode CLI...${NC}"
+    
+    npm install -g @kilocode/cli
+    
+    # Refresh PATH
+    hash -r 2>/dev/null || true
+    
+    if check_command kilo; then
+        echo -e "${GREEN}✓ KiloCode CLI installed successfully${NC}"
+        return 0
+    else
+        echo -e "${YELLOW}KiloCode CLI installed. You may need to restart your terminal.${NC}"
+        return 0
+    fi
+}
+
+# ============================================
+# Dependency Check and Install Flow
+# ============================================
+
+check_and_install_dependencies() {
+    local pkg_manager
+    local missing_deps=()
+    local needs_package_manager=false
+    
+    # Detect package manager
+    pkg_manager=$(detect_package_manager)
+    
+    # Print header
+    echo -e "\n${CYAN}═══════════════════════════════════════════════════════════${NC}"
+    echo -e "${CYAN}  Dependency Check - ${OS}${NC}"
+    echo -e "${CYAN}═══════════════════════════════════════════════════════════${NC}"
+    echo ""
+    
+    # Check package manager first (for macOS and Windows)
+    if [[ "$OS" == "macos" ]]; then
+        if check_command brew; then
+            print_status "Homebrew" "true" "$(get_version brew)" "true"
+        else
+            print_status "Homebrew" "false" "" "true"
+            needs_package_manager=true
+        fi
+    elif [[ "$OS" == "windows" ]]; then
+        if check_command winget; then
+            print_status "winget" "true" "$(get_version winget)" "true"
+        elif check_command choco; then
+            print_status "Chocolatey" "true" "$(get_version choco)" "true"
+        else
+            print_status "winget/Chocolatey" "false" "" "true"
+            needs_package_manager=true
+        fi
+    fi
+    
+    # Check Git
+    if check_command git; then
+        print_status "Git" "true" "$(get_version git)" "true"
+    else
+        print_status "Git" "false" "" "true"
+        missing_deps+=("git")
+    fi
+    
+    # Check npm/Node.js
+    if check_command npm; then
+        print_status "npm/Node.js" "true" "$(get_version npm)" "true"
+    else
+        print_status "npm/Node.js" "false" "" "true"
+        missing_deps+=("npm")
+    fi
+    
+    # Check agent-browser
+    if check_command agent-browser; then
+        print_status "agent-browser" "true" "$(get_version agent-browser)" "true"
+    else
+        print_status "agent-browser" "false" "" "true"
+        missing_deps+=("agent-browser")
+    fi
+    
+    # Check OpenCode and KiloCode
+    local has_opencode=false
+    local has_kilo=false
+    
+    if check_command opencode; then
+        print_status "OpenCode" "true" "$(get_version opencode)" "false"
+        has_opencode=true
+    else
+        print_status "OpenCode" "false" "" "false"
+    fi
+    
+    if check_command kilo; then
+        print_status "KiloCode CLI" "true" "$(get_version kilo)" "false"
+        has_kilo=true
+    else
+        print_status "KiloCode CLI" "false" "" "false"
+    fi
+    
+    echo ""
+    
+    # Handle missing package manager first
+    if [[ "$needs_package_manager" == "true" ]]; then
+        echo -e "${YELLOW}A package manager is required to install dependencies.${NC}"
+        
+        if [[ "$OS" == "macos" ]]; then
+            if ! is_interactive; then
+                echo -e "${RED}Cannot install Homebrew in non-interactive mode.${NC}"
+                exit 1
+            fi
+            
+            read -rp "Would you like to install Homebrew now? [Y/n]: " choice
+            choice="${choice:-y}"
+            
+            if [[ "$choice" =~ ^[Yy] ]]; then
+                install_homebrew || exit 1
+                pkg_manager="brew"
+            else
+                echo -e "${RED}Cannot continue without Homebrew on macOS.${NC}"
+                exit 1
+            fi
+        elif [[ "$OS" == "windows" ]]; then
+            if ! is_interactive; then
+                echo -e "${RED}Cannot install Chocolatey in non-interactive mode.${NC}"
+                exit 1
+            fi
+            
+            echo -e "${YELLOW}winget is not available. Chocolatey can be installed as an alternative.${NC}"
+            read -rp "Would you like instructions to install Chocolatey? [Y/n]: " choice
+            choice="${choice:-y}"
+            
+            if [[ "$choice" =~ ^[Yy] ]]; then
+                install_chocolatey || exit 1
+                pkg_manager="choco"
+            else
+                echo -e "${RED}Cannot continue without a package manager on Windows.${NC}"
+                exit 1
+            fi
+        fi
+    fi
+    
+    # Install missing dependencies
+    if [[ ${#missing_deps[@]} -gt 0 ]]; then
+        echo ""
+        echo -e "${YELLOW}The following dependencies are missing:${NC}"
+        for dep in "${missing_deps[@]}"; do
+            echo -e "  - ${dep}"
+        done
+        echo ""
+        
+        if ! is_interactive; then
+            echo -e "${YELLOW}Installing missing dependencies automatically...${NC}"
+        else
+            read -rp "Would you like to install these automatically? [Y/n]: " choice
+            choice="${choice:-y}"
+            
+            if [[ ! "$choice" =~ ^[Yy] ]]; then
+                echo -e "${RED}Cannot continue without required dependencies.${NC}"
+                exit 1
+            fi
+        fi
+        
+        # Install in correct order
+        for dep in "${missing_deps[@]}"; do
+            case "$dep" in
+                git)
+                    install_git "$pkg_manager" || exit 1
+                    ;;
+                npm)
+                    install_nodejs "$pkg_manager" || exit 1
+                    ;;
+                agent-browser)
+                    # npm must be installed first
+                    if ! check_command npm; then
+                        install_nodejs "$pkg_manager" || exit 1
+                    fi
+                    install_agent_browser || exit 1
+                    ;;
+            esac
+        done
+    fi
+    
+    # Handle OpenCode/KiloCode selection
+    echo ""
+    
+    if [[ "$has_opencode" == "true" && "$has_kilo" == "true" ]]; then
+        # Both installed - ask which to configure for
+        echo -e "${GREEN}Both OpenCode and KiloCode CLI are installed.${NC}"
+        prompt_install_type
+    elif [[ "$has_opencode" == "true" ]]; then
+        # Only OpenCode installed
+        echo -e "${GREEN}OpenCode is installed.${NC}"
+        if is_interactive; then
+            echo ""
+            echo -e "  ${BLUE}1)${NC} Use OpenCode (already installed)"
+            echo -e "  ${BLUE}2)${NC} Install KiloCode CLI instead"
+            read -rp "Choose [1-2, default: 1]: " choice
+            choice="${choice:-1}"
+            
+            if [[ "$choice" == "2" ]]; then
+                install_kilocode || exit 1
+                INSTALL_TYPE="kilo"
+            else
+                INSTALL_TYPE="opencode"
+            fi
+        else
+            INSTALL_TYPE="opencode"
+        fi
+    elif [[ "$has_kilo" == "true" ]]; then
+        # Only KiloCode installed
+        echo -e "${GREEN}KiloCode CLI is installed.${NC}"
+        if is_interactive; then
+            echo ""
+            echo -e "  ${BLUE}1)${NC} Use KiloCode CLI (already installed)"
+            echo -e "  ${BLUE}2)${NC} Install OpenCode instead"
+            read -rp "Choose [1-2, default: 1]: " choice
+            choice="${choice:-1}"
+            
+            if [[ "$choice" == "2" ]]; then
+                install_opencode || exit 1
+                INSTALL_TYPE="opencode"
+            else
+                INSTALL_TYPE="kilo"
+            fi
+        else
+            INSTALL_TYPE="kilo"
+        fi
+    else
+        # Neither installed - ask which to install
+        echo -e "${YELLOW}Neither OpenCode nor KiloCode CLI is installed.${NC}"
+        
+        if ! is_interactive; then
+            echo -e "${YELLOW}Installing OpenCode by default...${NC}"
+            install_opencode || exit 1
+            INSTALL_TYPE="opencode"
+        else
+            echo ""
+            echo -e "  ${BLUE}1)${NC} Install OpenCode"
+            echo -e "  ${BLUE}2)${NC} Install KiloCode CLI"
+            read -rp "Choose [1-2, default: 1]: " choice
+            choice="${choice:-1}"
+            
+            if [[ "$choice" == "2" ]]; then
+                install_kilocode || exit 1
+                INSTALL_TYPE="kilo"
+            else
+                install_opencode || exit 1
+                INSTALL_TYPE="opencode"
+            fi
+        fi
+    fi
+    
+    echo ""
+    echo -e "${GREEN}All dependencies satisfied!${NC}"
+}
+
+# ============================================
 # Interactive Prompts
 # ============================================
 
 prompt_install_type() {
-    # Use defaults if not interactive
     if ! is_interactive; then
-        echo -e "${YELLOW}Running in non-interactive mode. Using defaults: OpenCode${NC}"
         INSTALL_TYPE="opencode"
         return
     fi
     
     echo -e "\n${CYAN}═══════════════════════════════════════════════════════════${NC}"
-    echo -e "${CYAN}  Installation Type${NC}"
+    echo -e "${CYAN}  Choose Configuration${NC}"
     echo -e "${CYAN}═══════════════════════════════════════════════════════════${NC}"
     echo ""
-    echo -e "  ${BLUE}1)${NC} OpenCode"
-    echo -e "  ${BLUE}2)${NC} KiloCode CLI"
+    echo -e "  ${BLUE}1)${NC} Configure for OpenCode"
+    echo -e "  ${BLUE}2)${NC} Configure for KiloCode CLI"
     echo ""
     
     while true; do
@@ -211,7 +778,7 @@ prompt_install_type() {
         esac
     done
     
-    # Show gateway info and wait for Enter
+    # Show gateway info
     echo ""
     if [[ "$INSTALL_TYPE" == "kilo" ]]; then
         echo -e "${YELLOW}→ Connect to Kilo Gateway for default models to work${NC}"
@@ -219,15 +786,6 @@ prompt_install_type() {
         echo -e "${YELLOW}→ Connect to OpenCode Zen for default models to work${NC}"
     fi
     echo -e "${YELLOW}→ You can do this after installation if needed${NC}"
-    echo ""
-    read -rp "Press Enter to continue..."
-    
-    echo ""
-    if [[ "$INSTALL_TYPE" == "kilo" ]]; then
-        echo -e "${YELLOW}add API keys to opencode.json if experiencing problems${NC}"
-    else
-        echo -e "${YELLOW}add API keys to opencode.json if experiencing problems${NC}"
-    fi
 }
 
 # ============================================
@@ -365,34 +923,21 @@ TPLATE
 # ============================================
 
 install() {
-    local os config_dir models
-    
-    # Detect OS
-    os=$(detect_os)
-    echo -e "${GREEN}Detected OS: ${os}${NC}"
+    local config_dir models
     
     # Parse command line args first (for backward compatibility)
     parse_args "$@"
     
-    # Interactive prompts
-    prompt_install_type
+    # Detect OS
+    OS=$(detect_os)
+    echo -e "${GREEN}Detected OS: ${OS}${NC}"
+    
+    # Check and install dependencies (this also sets INSTALL_TYPE)
+    check_and_install_dependencies
     
     # Get config directory
-    config_dir=$(get_config_dir "$INSTALL_TYPE" "$os")
+    config_dir=$(get_config_dir "$INSTALL_TYPE" "$OS")
     echo -e "${GREEN}Config directory: ${config_dir}${NC}"
-    
-    # Check if OpenCode/Kilo is installed
-    if [[ "$INSTALL_TYPE" == "kilo" ]]; then
-        if ! command -v kilo &> /dev/null; then
-            echo -e "${YELLOW}Warning: KiloCode CLI is not installed or not in PATH${NC}"
-            echo -e "${YELLOW}Install KiloCode CLI first${NC}"
-        fi
-    else
-        if ! command -v opencode &> /dev/null; then
-            echo -e "${YELLOW}Warning: OpenCode is not installed or not in PATH${NC}"
-            echo -e "${YELLOW}Install OpenCode first: https://opencode.ai${NC}"
-        fi
-    fi
     
     # Create config directory if needed
     mkdir -p "$config_dir"
@@ -499,12 +1044,12 @@ install() {
 main() {
     echo -e "${CYAN}"
     cat << 'BANNER'                                                                              
-                                                                         
                                                                           
+                                                                           
 ▄████▄ ▄▄▄▄  ▄▄▄▄▄ ▄▄  ▄▄ ██ ▄█▀ ▄▄ ▄▄     ▄▄▄  ▄█████  ▄▄▄  ▄▄▄▄  ▄▄▄▄▄ 
 ██  ██ ██▄█▀ ██▄▄  ███▄██ ████   ██ ██    ██▀██ ██     ██▀██ ██▀██ ██▄▄  
 ▀████▀ ██    ██▄▄▄ ██ ▀██ ██ ▀█▄ ██ ██▄▄▄ ▀███▀ ▀█████ ▀███▀ ████▀ ██▄▄▄ 
-                                                                         
+                                                                          
                                                                                                                                
 BANNER
     echo -e "${NC}"
