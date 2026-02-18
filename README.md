@@ -28,7 +28,12 @@ The orchestrator also uses **skills** when beneficial:
 - **cartography** → Maps codebase structure (automatically when you ask to understand/map the codebase or by simply input 'cartography')
 - **simplify** → Automatically refines code after changes for clarity
 
-Most users only need to interact with the orchestrator—it handles delegation automatically.
+**MCP Servers** are integrated and used by agents when needed:
+- **websearch** → Web search (Exa)
+- **context7** → Official documentation lookup
+- **grep_app** → GitHub code search
+
+Most users only need to interact with the orchestrator—it handles delegation and MCP/skills automatically.
 
 ## Quick Start
 
@@ -66,16 +71,6 @@ brew install git
 ```bash
 winget install Git.Git
 ```
-
-## MCP Servers
-
-| Server | Purpose |
-|--------|---------|
-| **websearch** | Web search via Exa |
-| **context7** | Official docs lookup |
-| **grep_app** | GitHub code search |
-
-> **Note**: API keys are added directly in `opencode.json`. See [API Keys](#api-keys) section below.
 
 ## Usage
 
