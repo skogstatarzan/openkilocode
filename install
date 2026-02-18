@@ -404,7 +404,8 @@ install() {
     echo -e "${GREEN}Downloading OpenKiloCode...${NC}"
     
     if command -v git &> /dev/null; then
-        git clone --depth 1 --branch "$REPO_BRANCH" "$REPO_URL" /tmp/openkilocode 2>/dev/null || {
+        echo -e "${YELLOW}Running: git clone --depth 1 --branch $REPO_BRANCH $REPO_URL /tmp/openkilocode${NC}"
+        git clone --depth 1 --branch "$REPO_BRANCH" "$REPO_URL" /tmp/openkilocode 2>&1 || {
             echo -e "${RED}Failed to clone repository${NC}"
             exit 1
         }
