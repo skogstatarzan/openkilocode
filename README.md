@@ -6,12 +6,30 @@ Multi-agent configuration for OpenCode and KiloCode CLI with 7 specialized agent
 ▄████▄ ▄▄▄▄  ▄▄▄▄▄ ▄▄  ▄▄ ██ ▄█▀ ▄▄ ▄▄     ▄▄▄  ▄█████  ▄▄▄  ▄▄▄▄  ▄▄▄▄▄ 
 ██  ██ ██▄█▀ ██▄▄  ███▄██ ████   ██ ██    ██▀██ ██     ██▀██ ██▀██ ██▄▄  
 ▀████▀ ██    ██▄▄▄ ██ ▀██ ██ ▀█▄ ██ ██▄▄▄ ▀███▀ ▀█████ ▀███▀ ████▀ ██▄▄▄ 
-                                                                 
+                                                                  
 ```
 
 This configuration works with **both OpenCode and KiloCode CLI**.
 
 > **Credit**: Built on top of [oh-my-opencode-slim](https://github.com/alvinunreal/oh-my-opencode-slim) by [@alvinunreal](https://github.com/alvinunreal)
+
+## Quick Start
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/skogstatarzan/openkilocode/main/install | bash
+```
+
+**That's it!** The installer handles everything:
+
+- ✅ Detects your operating system (macOS, Linux, Windows)
+- ✅ Installs missing dependencies (git, Node.js, npm)
+- ✅ Installs OpenCode or KiloCode CLI if not present
+- ✅ Installs agent-browser for web automation
+- ✅ Configures all agents and MCP servers
+
+You'll be asked to choose between **OpenCode** or **KiloCode CLI**. Models are auto-selected per agent.
+
+> **Note**: Connect to OpenCode Zen or Kilo Gateway for the default models to work.
 
 ## How It Works
 
@@ -34,51 +52,6 @@ The orchestrator also uses **skills** when beneficial:
 - **grep_app** → GitHub code search
 
 Most users only need to interact with the orchestrator—it handles delegation and MCP/skills automatically.
-
-## Quick Start
-
-```bash
-curl -LfsSL https://raw.githubusercontent.com/skogstatarzan/openkilocode/main/install -o install.sh && bash install.sh
-```
-
-The installer will ask you to choose OpenCode or KiloCode CLI.
-
-Models are auto-selected per agent. Connect to OpenCode Zen or Kilo Gateway for them to work.
-
-### Requirements
-
-- OpenCode or KiloCode CLI installed (`opencode` or `kilo` in PATH)
-- Git for installation
-
-**Linux (Debian/Ubuntu)**
-```bash
-sudo apt update && sudo apt install git
-```
-
-**Linux (Fedora/RHEL)**
-```bash
-sudo dnf install git
-```
-
-**macOS**
-```bash
-brew install git
-```
-
-**Windows (via winget)**
-```bash
-winget install Git.Git
-```
-
-### Optional: Browser Automation
-
-For web browsing/screenshot capabilities (used by @designer for UI analysis):
-
-**All platforms (requires Node.js)**
-```bash
-npm install -g agent-browser
-agent-browser install
-```
 
 ## Usage
 
