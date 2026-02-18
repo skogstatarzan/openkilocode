@@ -217,7 +217,7 @@ Add API keys directly in `opencode.json`:
     ├── simplify/
     └── agent-browser/
 
-> **Note**: On Windows, `~/.config` translates to `%USERPROFILE%/.config/`
+> **Note**: On Windows, `~/.config` translates to `%USERPROFILE%\.config\`
 
 ## Default Models
 
