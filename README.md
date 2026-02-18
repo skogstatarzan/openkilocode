@@ -11,11 +11,15 @@ Multi-agent configuration for OpenCode with 7 specialized agents and MCP integra
 ## Quick Start
 
 ```bash
-# Interactive installation (will prompt for choices)
+# Download and run interactively (recommended for choices)
+curl -fsSL https://raw.githubusercontent.com/skogstatarzan/opencode-config/main/install -o install.sh
+bash install.sh
+
+# Or use defaults directly (non-interactive)
 curl -fsSL https://raw.githubusercontent.com/skogstatarzan/opencode-config/main/install | bash
 ```
 
-The installer will ask you:
+The interactive installer will ask you:
 1. **Installation type**: OpenCode or KiloCode CLI (determines config folder)
 2. **Model selection**: Use defaults or specify custom models
 

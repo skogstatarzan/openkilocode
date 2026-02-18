@@ -18,7 +18,7 @@ CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
 # Default values
-REPO_URL="https://github.com/simonwep/opencode-pantheon"
+REPO_URL="https://github.com/skogstatarzan/opencode-config"
 REPO_BRANCH="main"
 USE_DEFAULTS=true
 CUSTOM_MODELS=""
