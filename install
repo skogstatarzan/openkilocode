@@ -169,8 +169,6 @@ prompt_install_type() {
     echo -e "  ${BLUE}1)${NC} OpenCode      → Config: ~/.config/opencode"
     echo -e "  ${BLUE}2)${NC} KiloCode CLI   → Config: ~/.config/kilo"
     echo ""
-    echo -e "  The only difference is where config files are stored."
-    echo ""
     
     while true; do
         read -rp "$(echo -e "${GREEN}Choose [1-2, default: 1]: ${NC}")" choice
@@ -191,51 +189,16 @@ prompt_install_type() {
         esac
     done
     
-    echo -e "${GREEN}Selected: $INSTALL_TYPE${NC}"
-}
-
-prompt_model_choice() {
-    # Use defaults if not interactive
-    if ! is_interactive; then
-        echo -e "${YELLOW}Running in non-interactive mode. Using default models.${NC}"
-        USE_DEFAULTS=true
-        return
-    fi
-    
-    echo -e "\n${CYAN}═══════════════════════════════════════════════════════════${NC}"
-    echo -e "${CYAN}  Model Selection${NC}"
-    echo -e "${CYAN}═══════════════════════════════════════════════════════════${NC}"
+    # Show gateway info and wait for Enter
     echo ""
-    echo -e "  ${BLUE}1)${NC} Use default models"
-    echo -e "  ${BLUE}2)${NC} Specify custom models"
-    echo ""
-    
-    while true; do
-        read -rp "$(echo -e "${GREEN}Choose [1-2, default: 1]: ${NC}")" choice
-        choice="${choice:-1}"
-        
-        case "$choice" in
-            1)
-                USE_DEFAULTS=true
-                break
-                ;;
-            2)
-                USE_DEFAULTS=false
-                break
-                ;;
-            *)
-                echo -e "${YELLOW}Please enter 1 or 2${NC}"
-                ;;
-        esac
-    done
-    
-    if [[ "$USE_DEFAULTS" == "false" ]]; then
-        echo ""
-        echo -e "${BLUE}Enter models in format: agent=model,agent=model${NC}"
-        echo -e "${YELLOW}Example: orchestrator=opencode/glm-5,fixer=opencode/minimax-m2.5${NC}"
-        echo ""
-        read -rp "$(echo -e "${GREEN}Models: ${NC}")" CUSTOM_MODELS
+    if [[ "$INSTALL_TYPE" == "kilo" ]]; then
+        echo -e "${YELLOW}→ Connect to Kilo Gateway for default models to work${NC}"
+    else
+        echo -e "${YELLOW}→ Connect to OpenCode Zen for default models to work${NC}"
     fi
+    echo -e "${YELLOW}→ You can do this after installation if needed${NC}"
+    echo ""
+    read -rp "Press Enter to continue..."
 }
 
 # ============================================
@@ -255,12 +218,21 @@ get_available_models() {
 # ============================================
 
 select_models() {
-    local available_models
-    available_models=$(get_available_models)
+    local install_type="$1"
     
-    # Default models
-    local defaults
-    defaults=$(cat << 'EOF'
+    if [[ "$install_type" == "kilo" ]]; then
+        cat << 'EOF'
+orchestrator=kilo/z-ai/glm-5
+explorer=kilo/minimax/minimax-m2.5
+oracle=kilo/anthropic/claude-sonnet-4.6
+librarian=kilo/google/gemini-3-flash-preview
+designer=kilo/google/gemini-3-flash-preview
+fixer=kilo/minimax/minimax-m2.5
+mapper=kilo/minimax/minimax-m2.5
+default=kilo/minimax/minimax-m2.5
+EOF
+    else
+        cat << 'EOF'
 orchestrator=opencode/glm-5
 explorer=opencode/minimax-m2.5
 oracle=opencode/claude-sonnet-4-6
@@ -270,20 +242,7 @@ fixer=opencode/minimax-m2.5
 mapper=opencode/minimax-m2.5
 default=opencode/minimax-m2.5
 EOF
-)
-    
-    # Parse custom models if provided
-    if [[ -n "$CUSTOM_MODELS" ]]; then
-        echo "$CUSTOM_MODELS" | tr ',' '\n' | while read -r pair; do
-            agent="${pair%%=*}"
-            model="${pair#*=}"
-            echo "${agent}=${model}"
-        done
-        return
     fi
-    
-    # Use defaults
-    echo "$defaults"
 }
 
 # ============================================
@@ -489,11 +448,8 @@ install() {
     # Parse command line args first (for backward compatibility)
     parse_args "$@"
     
-    # Interactive prompts if not set via args
-    if [[ -z "$CUSTOM_MODELS" ]]; then
-        prompt_install_type
-        prompt_model_choice
-    fi
+    # Interactive prompts
+    prompt_install_type
     
     # Get config directory
     config_dir=$(get_config_dir "$INSTALL_TYPE" "$os")
@@ -539,8 +495,8 @@ install() {
         exit 1
     fi
     
-    # Select models
-    models=$(select_models)
+    # Select models based on install type
+    models=$(select_models "$INSTALL_TYPE")
     
     # Generate config
     echo -e "${GREEN}Generating configuration...${NC}"
