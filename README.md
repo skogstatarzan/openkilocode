@@ -15,13 +15,13 @@ Multi-agent configuration for OpenCode with 6 specialized agents and MCP integra
 
 ```bash
 # Interactive installation (choose models)
-curl -fsSL https://raw.githubusercontent.com/simonwep/opencode-pantheon/main/install | bash
+curl -fsSL https://raw.githubusercontent.com/skogstatarzan/opencode-config/main/install | bash
 
 # Use default models
-curl -fsSL https://raw.githubusercontent.com/simonwep/opencode-pantheon/main/install | bash -s -- --defaults
+curl -fsSL https://raw.githubusercontent.com/skogstatarzan/opencode-config/main/install | bash -s -- --defaults
 
 # Specify custom models
-curl -fsSL ... | bash -s -- --models "orchestrator=opencode/gpt-5.1-codex,fixer=opencode/gemini-3-flash"
+curl -fsSL ... | bash -s -- --models "orchestrator=opencode/glm-5,fixer=opencode/minimax-m2.5"
 ```
 
 ## Agents
@@ -131,6 +131,7 @@ export CONTEXT7_API_KEY="your-key"
 ```
 ~/.config/opencode/
 ├── opencode.json       # Main configuration
+├── defaults.json       # Default model settings
 ├── agents/             # Agent prompts (editable)
 │   ├── orchestrator.md
 │   ├── explorer.md
@@ -138,23 +139,22 @@ export CONTEXT7_API_KEY="your-key"
 │   ├── librarian.md
 │   ├── designer.md
 │   └── fixer.md
-├── skills/             # Skills
-│   ├── cartography/
-│   ├── simplify/
-│   └── agent-browser/
-└── commands/           # Custom commands
+└── skills/             # Skills
+    ├── cartography/
+    ├── simplify/
+    └── agent-browser/
 ```
 
 ## Default Models
 
 | Agent | Default Model |
 |-------|---------------|
-| orchestrator | `kilo/z-ai/glm-5` |
-| explorer | `kilo/minimax/minimax-m2.5` |
-| oracle | `kilo/anthropic/claude-sonnet-4.6` |
-| librarian | `kilo/google/gemini-3-flash-preview` |
-| designer | `kilo/google/gemini-3-flash-preview` |
-| fixer | `kilo/minimax/minimax-m2.5` |
+| orchestrator | `opencode/glm-5` |
+| explorer | `opencode/minimax-m2.5` |
+| oracle | `opencode/claude-sonnet-4-6` |
+| librarian | `opencode/gemini-3-flash` |
+| designer | `opencode/gemini-3-flash` |
+| fixer | `opencode/minimax-m2.5` |
 
 ## Requirements
 
