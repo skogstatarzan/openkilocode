@@ -70,6 +70,28 @@ brew install git
 winget install Git.Git
 ```
 
+### Optional: Browser Automation
+
+For web browsing/screenshot capabilities (used by @designer for UI analysis):
+
+**All platforms**
+```bash
+npm install -g agent-browser
+agent-browser install
+```
+
+**macOS**
+```bash
+brew install agent-browser
+agent-browser install
+```
+
+**Linux (with dependencies)**
+```bash
+npm install -g agent-browser
+agent-browser install --with-deps
+```
+
 ## Usage
 
 ```bash
