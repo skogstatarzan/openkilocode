@@ -13,6 +13,23 @@ This configuration works with **both OpenCode and KiloCode CLI**.
 
 > **Credit**: Built on top of [oh-my-opencode-slim](https://github.com/alvinunreal/oh-my-opencode-slim) by [@alvinunreal](https://github.com/alvinunreal)
 
+## How It Works
+
+This configuration comes pre-configured with **orchestrator** as the default agent, which automatically delegates tasks to specialist subagents based on the task:
+
+- **@explorer** → Codebase search & discovery
+- **@librarian** → Documentation lookup
+- **@oracle** → Architecture & high-level decisions
+- **@designer** → UI/UX improvements
+- **@fixer** → Fast implementation
+- **@mapper** → Repository mapping
+
+The orchestrator also uses **skills** when beneficial:
+- **cartography** → Maps codebase structure (use `@mapper` or run with `/map`)
+- **simplify** → Refines and simplifies code
+
+Most users only need to interact with the orchestrator—it handles delegation automatically.
+
 ## Quick Start
 
 ```bash
@@ -105,39 +122,7 @@ vim ~/.config/opencode/agents/orchestrator.md
 vim ~/.config/kilo/agents/orchestrator.md
 ```
 
-### Change Models
-
-Edit the agent markdown file's frontmatter:
-
-```yaml
----
-description: My custom agent
-mode: subagent
-model: opencode/gpt-5.1-codex
----
-
-You are a custom agent that does X, Y, Z.
-```
-
-### Add Custom Agent
-
-```bash
-# For OpenCode
-vim ~/.config/opencode/agents/my-agent.md
-
-# For KiloCode CLI
-vim ~/.config/kilo/agents/my-agent.md
-```
-
-```markdown
----
-description: My custom agent
-mode: subagent
-model: opencode/gpt-5.1-codex
----
-
-You are a custom agent that does X, Y, Z.
-```
+For advanced customization (custom agents, models, skills), see the [OpenCode Agents Docs](https://opencode.ai/docs/agents) and [OpenCode Skills Docs](https://opencode.ai/docs/skills).
 
 ## Skills
 
@@ -148,18 +133,6 @@ Skills are reusable instructions that can be enabled per agent.
 | **cartography** | Repository mapping & codemap generation |
 | **simplify** | Code simplification & refinement |
 | **agent-browser** | Browser automation for testing |
-
-### Enable a Skill
-
-In the agent markdown file's frontmatter:
-
-```yaml
----
-description: My agent
-mode: subagent
-skill: true
----
-```
 
 ## API Keys
 
