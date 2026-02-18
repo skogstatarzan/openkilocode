@@ -23,16 +23,26 @@ REPO_URL="https://github.com/skogstatarzan/openkilocode"
 REPO_BRANCH="main"
 USE_DEFAULTS=true
 CUSTOM_MODELS=""
-INSTALL_TYPE="opencode"  # "opencode" or "kilo"
+INSTALL_TYPE="opencode"
 EXA_API_KEY=""
 CONTEXT7_API_KEY=""
 
 # Global OS variable
 OS=""
 
-# Check if running interactively
-is_interactive() {
-    [[ -t 0 ]]
+# Check if running interactively (or can use /dev/tty)
+can_interact() {
+    # Can interact if stdin is a terminal OR /dev/tty exists and is writable
+    [[ -t 0 ]] || (test -t 1 || test -w /dev/tty)
+}
+
+# Read with fallback to /dev/tty for piped input
+prompt_read() {
+    if [[ -t 0 ]]; then
+        read -rp "$@"
+    else
+        read -rp "$@" </dev/tty
+    fi
 }
 
 # ============================================
@@ -49,7 +59,6 @@ detect_os() {
         *)          OS="linux" ;;
     esac
     
-    # Check for WSL
     if [[ "$OS" == "linux" ]] && grep -qi microsoft /proc/version 2>/dev/null; then
         OS="wsl"
     fi
@@ -57,7 +66,6 @@ detect_os() {
     echo "$OS"
 }
 
-# Detect Linux distribution
 detect_linux_distro() {
     if [[ -f /etc/debian_version ]]; then
         echo "debian"
@@ -74,10 +82,6 @@ detect_linux_distro() {
     fi
 }
 
-# ============================================
-# Detect sed flag for in-place editing (macOS vs GNU)
-# ============================================
-
 get_sed_inplace_flag() {
     if [[ "$(uname -s)" == "Darwin" ]]; then
         echo "-i ''"
@@ -85,10 +89,6 @@ get_sed_inplace_flag() {
         echo "-i"
     fi
 }
-
-# ============================================
-# Config Path Detection
-# ============================================
 
 get_config_dir() {
     local install_type="$1"
@@ -136,7 +136,7 @@ get_config_dir() {
 }
 
 # ============================================
-# Argument Parsing (for backward compatibility)
+# Argument Parsing
 # ============================================
 
 parse_args() {
@@ -152,7 +152,6 @@ parse_args() {
                 shift 2
                 ;;
             --non-interactive|-y)
-                # Keep using defaults in non-interactive mode
                 shift
                 ;;
             --help|-h)
@@ -176,20 +175,10 @@ Usage:
   curl -fsSL <url>/install | bash
 
 Options:
-  -d, --defaults          Use default models (default behavior)
-  -m, --models MODELS     Specify custom models (format: agent=model,agent=model)
-  -y, --non-interactive   Non-interactive mode (use defaults)
+  -d, --defaults          Use default models
+  -m, --models MODELS     Specify custom models
+  -y, --non-interactive   Non-interactive mode
   -h, --help              Show this help message
-
-Examples:
-  # Interactive installation (will prompt for choices)
-  curl -fsSL https://raw.githubusercontent.com/skogstatarzan/openkilocode/main/install | bash
-
-  # Use default models
-  curl -fsSL ... | bash -s -- --defaults
-
-  # Specify custom models
-  curl -fsSL ... | bash -s -- --models "orchestrator=opencode/gpt-5.1-codex,fixer=opencode/gemini-3-flash"
 EOF
 }
 
@@ -197,12 +186,10 @@ EOF
 # Dependency Checking
 # ============================================
 
-# Check if a command exists
 check_command() {
     command -v "$1" &> /dev/null
 }
 
-# Get version of a command (for display)
 get_version() {
     local cmd="$1"
     case "$cmd" in
@@ -239,7 +226,6 @@ get_version() {
     esac
 }
 
-# Print dependency status
 print_status() {
     local name="$1"
     local installed="$2"
@@ -310,7 +296,6 @@ detect_package_manager() {
 # Installation Functions
 # ============================================
 
-# Install Homebrew on macOS
 install_homebrew() {
     echo -e "\n${CYAN}═══════════════════════════════════════════════════════════${NC}"
     echo -e "${CYAN}  Homebrew Installation Required${NC}"
@@ -324,13 +309,12 @@ install_homebrew() {
     echo ""
     echo "Follow the prompts:"
     echo "  1. Press RETURN when asked"
-    echo "  2. Enter your password when asked (for sudo)"
-    echo "  3. Wait for installation to complete (2-10 minutes)"
-    echo "  4. Run any 'eval' commands shown at the end (for PATH)"
+    echo "  2. Enter your password when asked"
+    echo "  3. Wait for installation to complete"
+    echo "  4. Run any 'eval' commands shown at the end"
     echo ""
-    read -rp "Press Enter when Homebrew installation is complete..."
+    prompt_read "Press Enter when Homebrew installation is complete... "
     
-    # Verify installation
     if check_command brew; then
         echo -e "${GREEN}✓ Homebrew detected!${NC}"
         return 0
@@ -340,7 +324,6 @@ install_homebrew() {
     fi
 }
 
-# Install Chocolatey on Windows
 install_chocolatey() {
     echo -e "\n${CYAN}═══════════════════════════════════════════════════════════${NC}"
     echo -e "${CYAN}  Chocolatey Installation Required${NC}"
@@ -352,21 +335,17 @@ install_chocolatey() {
     echo ""
     echo -e "  ${BOLD}Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))${NC}"
     echo ""
-    echo "After installation, close and reopen your terminal."
-    echo ""
-    read -rp "Press Enter when Chocolatey installation is complete..."
+    prompt_read "Press Enter when Chocolatey installation is complete... "
     
-    # Verify installation
     if check_command choco; then
         echo -e "${GREEN}✓ Chocolatey detected!${NC}"
         return 0
     else
-        echo -e "${RED}Chocolatey still not found. Please complete the installation and restart this script.${NC}"
+        echo -e "${RED}Chocolatey still not found.${NC}"
         return 1
     fi
 }
 
-# Install Git
 install_git() {
     local pkg_manager="$1"
     
@@ -394,7 +373,6 @@ install_git() {
             ;;
     esac
     
-    # Verify
     if check_command git; then
         echo -e "${GREEN}✓ Git installed successfully${NC}"
         return 0
@@ -404,7 +382,6 @@ install_git() {
     fi
 }
 
-# Install Node.js and npm
 install_nodejs() {
     local pkg_manager="$1"
     
@@ -432,12 +409,10 @@ install_nodejs() {
             ;;
     esac
     
-    # Refresh PATH for Windows
     if [[ "$OS" == "windows" ]]; then
         export PATH="$PATH:/c/Program Files/nodejs"
     fi
     
-    # Verify
     if check_command npm; then
         echo -e "${GREEN}✓ Node.js and npm installed successfully${NC}"
         return 0
@@ -447,13 +422,10 @@ install_nodejs() {
     fi
 }
 
-# Install agent-browser
 install_agent_browser() {
     echo -e "${BLUE}Installing agent-browser...${NC}"
     
     npm install -g agent-browser
-    
-    # Run agent-browser install
     agent-browser install 2>/dev/null || true
     
     if check_command agent-browser; then
@@ -465,7 +437,6 @@ install_agent_browser() {
     fi
 }
 
-# Install OpenCode
 install_opencode() {
     echo -e "${BLUE}Installing OpenCode...${NC}"
     
@@ -475,7 +446,6 @@ install_opencode() {
         curl -fsSL https://opencode.ai/install | bash
     fi
     
-    # Refresh PATH
     hash -r 2>/dev/null || true
     
     if check_command opencode; then
@@ -487,13 +457,10 @@ install_opencode() {
     fi
 }
 
-# Install KiloCode CLI
 install_kilocode() {
     echo -e "${BLUE}Installing KiloCode CLI...${NC}"
     
     npm install -g @kilocode/cli
-    
-    # Refresh PATH
     hash -r 2>/dev/null || true
     
     if check_command kilo; then
@@ -514,16 +481,14 @@ check_and_install_dependencies() {
     local missing_deps=()
     local needs_package_manager=false
     
-    # Detect package manager
     pkg_manager=$(detect_package_manager)
     
-    # Print header
     echo -e "\n${CYAN}═══════════════════════════════════════════════════════════${NC}"
     echo -e "${CYAN}  Dependency Check - ${OS}${NC}"
     echo -e "${CYAN}═══════════════════════════════════════════════════════════${NC}"
     echo ""
     
-    # Check package manager first (for macOS and Windows)
+    # Check package manager
     if [[ "$OS" == "macos" ]]; then
         if check_command brew; then
             print_status "Homebrew" "true" "$(get_version brew)" "true"
@@ -550,7 +515,7 @@ check_and_install_dependencies() {
         missing_deps+=("git")
     fi
     
-    # Check npm/Node.js
+    # Check npm
     if check_command npm; then
         print_status "npm/Node.js" "true" "$(get_version npm)" "true"
     else
@@ -586,17 +551,12 @@ check_and_install_dependencies() {
     
     echo ""
     
-    # Handle missing package manager first
+    # Handle missing package manager
     if [[ "$needs_package_manager" == "true" ]]; then
         echo -e "${YELLOW}A package manager is required to install dependencies.${NC}"
         
         if [[ "$OS" == "macos" ]]; then
-            if ! is_interactive; then
-                echo -e "${RED}Cannot install Homebrew in non-interactive mode.${NC}"
-                exit 1
-            fi
-            
-            read -rp "Would you like to install Homebrew now? [Y/n]: " choice
+            prompt_read "Would you like to install Homebrew now? [Y/n]: " choice
             choice="${choice:-y}"
             
             if [[ "$choice" =~ ^[Yy] ]]; then
@@ -607,13 +567,8 @@ check_and_install_dependencies() {
                 exit 1
             fi
         elif [[ "$OS" == "windows" ]]; then
-            if ! is_interactive; then
-                echo -e "${RED}Cannot install Chocolatey in non-interactive mode.${NC}"
-                exit 1
-            fi
-            
             echo -e "${YELLOW}winget is not available. Chocolatey can be installed as an alternative.${NC}"
-            read -rp "Would you like instructions to install Chocolatey? [Y/n]: " choice
+            prompt_read "Would you like instructions to install Chocolatey? [Y/n]: " choice
             choice="${choice:-y}"
             
             if [[ "$choice" =~ ^[Yy] ]]; then
@@ -635,19 +590,14 @@ check_and_install_dependencies() {
         done
         echo ""
         
-        if ! is_interactive; then
-            echo -e "${YELLOW}Installing missing dependencies automatically...${NC}"
-        else
-            read -rp "Would you like to install these automatically? [Y/n]: " choice
-            choice="${choice:-y}"
-            
-            if [[ ! "$choice" =~ ^[Yy] ]]; then
-                echo -e "${RED}Cannot continue without required dependencies.${NC}"
-                exit 1
-            fi
+        prompt_read "Would you like to install these automatically? [Y/n]: " choice
+        choice="${choice:-y}"
+        
+        if [[ ! "$choice" =~ ^[Yy] ]]; then
+            echo -e "${RED}Cannot continue without required dependencies.${NC}"
+            exit 1
         fi
         
-        # Install in correct order
         for dep in "${missing_deps[@]}"; do
             case "$dep" in
                 git)
@@ -657,7 +607,6 @@ check_and_install_dependencies() {
                     install_nodejs "$pkg_manager" || exit 1
                     ;;
                 agent-browser)
-                    # npm must be installed first
                     if ! check_command npm; then
                         install_nodejs "$pkg_manager" || exit 1
                     fi
@@ -673,67 +622,70 @@ check_and_install_dependencies() {
     if [[ "$has_opencode" == "true" && "$has_kilo" == "true" ]]; then
         # Both installed - ask which to configure for
         echo -e "${GREEN}Both OpenCode and KiloCode CLI are installed.${NC}"
-        prompt_install_type
+        echo ""
+        echo -e "  ${BLUE}1)${NC} Configure for OpenCode"
+        echo -e "  ${BLUE}2)${NC} Configure for KiloCode CLI"
+        echo ""
+        
+        prompt_read "Choose [1-2, default: 1]: " choice
+        choice="${choice:-1}"
+        
+        if [[ "$choice" == "2" ]]; then
+            INSTALL_TYPE="kilo"
+        else
+            INSTALL_TYPE="opencode"
+        fi
     elif [[ "$has_opencode" == "true" ]]; then
         # Only OpenCode installed
         echo -e "${GREEN}OpenCode is installed.${NC}"
-        if is_interactive; then
-            echo ""
-            echo -e "  ${BLUE}1)${NC} Use OpenCode (already installed)"
-            echo -e "  ${BLUE}2)${NC} Install KiloCode CLI instead"
-            read -rp "Choose [1-2, default: 1]: " choice
-            choice="${choice:-1}"
-            
-            if [[ "$choice" == "2" ]]; then
-                install_kilocode || exit 1
-                INSTALL_TYPE="kilo"
-            else
-                INSTALL_TYPE="opencode"
-            fi
+        echo ""
+        echo -e "  ${BLUE}1)${NC} Configure for OpenCode (already installed)"
+        echo -e "  ${BLUE}2)${NC} Install KiloCode CLI and configure for that"
+        echo ""
+        
+        prompt_read "Choose [1-2, default: 1]: " choice
+        choice="${choice:-1}"
+        
+        if [[ "$choice" == "2" ]]; then
+            install_kilocode || exit 1
+            INSTALL_TYPE="kilo"
         else
             INSTALL_TYPE="opencode"
         fi
     elif [[ "$has_kilo" == "true" ]]; then
         # Only KiloCode installed
         echo -e "${GREEN}KiloCode CLI is installed.${NC}"
-        if is_interactive; then
-            echo ""
-            echo -e "  ${BLUE}1)${NC} Use KiloCode CLI (already installed)"
-            echo -e "  ${BLUE}2)${NC} Install OpenCode instead"
-            read -rp "Choose [1-2, default: 1]: " choice
-            choice="${choice:-1}"
-            
-            if [[ "$choice" == "2" ]]; then
-                install_opencode || exit 1
-                INSTALL_TYPE="opencode"
-            else
-                INSTALL_TYPE="kilo"
-            fi
+        echo ""
+        echo -e "  ${BLUE}1)${NC} Configure for KiloCode CLI (already installed)"
+        echo -e "  ${BLUE}2)${NC} Install OpenCode and configure for that"
+        echo ""
+        
+        prompt_read "Choose [1-2, default: 1]: " choice
+        choice="${choice:-1}"
+        
+        if [[ "$choice" == "2" ]]; then
+            install_opencode || exit 1
+            INSTALL_TYPE="opencode"
         else
             INSTALL_TYPE="kilo"
         fi
     else
         # Neither installed - ask which to install
         echo -e "${YELLOW}Neither OpenCode nor KiloCode CLI is installed.${NC}"
+        echo ""
+        echo -e "  ${BLUE}1)${NC} Install OpenCode"
+        echo -e "  ${BLUE}2)${NC} Install KiloCode CLI"
+        echo ""
         
-        if ! is_interactive; then
-            echo -e "${YELLOW}Installing OpenCode by default...${NC}"
+        prompt_read "Choose [1-2, default: 1]: " choice
+        choice="${choice:-1}"
+        
+        if [[ "$choice" == "2" ]]; then
+            install_kilocode || exit 1
+            INSTALL_TYPE="kilo"
+        else
             install_opencode || exit 1
             INSTALL_TYPE="opencode"
-        else
-            echo ""
-            echo -e "  ${BLUE}1)${NC} Install OpenCode"
-            echo -e "  ${BLUE}2)${NC} Install KiloCode CLI"
-            read -rp "Choose [1-2, default: 1]: " choice
-            choice="${choice:-1}"
-            
-            if [[ "$choice" == "2" ]]; then
-                install_kilocode || exit 1
-                INSTALL_TYPE="kilo"
-            else
-                install_opencode || exit 1
-                INSTALL_TYPE="opencode"
-            fi
         fi
     fi
     
@@ -742,66 +694,7 @@ check_and_install_dependencies() {
 }
 
 # ============================================
-# Interactive Prompts
-# ============================================
-
-prompt_install_type() {
-    if ! is_interactive; then
-        INSTALL_TYPE="opencode"
-        return
-    fi
-    
-    echo -e "\n${CYAN}═══════════════════════════════════════════════════════════${NC}"
-    echo -e "${CYAN}  Choose Configuration${NC}"
-    echo -e "${CYAN}═══════════════════════════════════════════════════════════${NC}"
-    echo ""
-    echo -e "  ${BLUE}1)${NC} Configure for OpenCode"
-    echo -e "  ${BLUE}2)${NC} Configure for KiloCode CLI"
-    echo ""
-    
-    while true; do
-        read -rp "$(echo -e "${GREEN}Choose [1-2, default: 1]: ${NC}")" choice
-        choice="${choice:-1}"
-        
-        case "$choice" in
-            1)
-                INSTALL_TYPE="opencode"
-                break
-                ;;
-            2)
-                INSTALL_TYPE="kilo"
-                break
-                ;;
-            *)
-                echo -e "${YELLOW}Please enter 1 or 2${NC}"
-                ;;
-        esac
-    done
-    
-    # Show gateway info
-    echo ""
-    if [[ "$INSTALL_TYPE" == "kilo" ]]; then
-        echo -e "${YELLOW}→ Connect to Kilo Gateway for default models to work${NC}"
-    else
-        echo -e "${YELLOW}→ Connect to OpenCode Zen for default models to work${NC}"
-    fi
-    echo -e "${YELLOW}→ You can do this after installation if needed${NC}"
-}
-
-# ============================================
-# Get Available Models from OpenCode
-# ============================================
-
-get_available_models() {
-    if command -v opencode &> /dev/null; then
-        opencode models --list 2>/dev/null | grep -E "^[a-z]" | head -50 || echo ""
-    else
-        echo ""
-    fi
-}
-
-# ============================================
-# Model Selection (updates agent markdown files)
+# Model Selection
 # ============================================
 
 select_models() {
@@ -832,10 +725,6 @@ EOF
     fi
 }
 
-# ============================================
-# Update agent markdown files with correct models
-# ============================================
-
 update_agent_models() {
     local config_dir="$1"
     local install_type="$2"
@@ -862,22 +751,16 @@ update_agent_models() {
     fi
 }
 
-# ============================================
-# Generate Config (without agent block - agents in markdown)
-# ============================================
-
 generate_config() {
     local models="$1"
     local config_dir="$2"
     local install_type="$3"
     
-    # Adjust model prefix based on install type
     local model_prefix="opencode"
     if [[ "$install_type" == "kilo" ]]; then
         model_prefix="kilo"
     fi
     
-    # API keys are empty by default - user can add them manually if needed
     local exa_header="\"x-api-key\": \"\""
     local context7_header='"CONTEXT7_API_KEY": ""'
     
@@ -925,31 +808,24 @@ TPLATE
 install() {
     local config_dir models
     
-    # Parse command line args first (for backward compatibility)
     parse_args "$@"
     
-    # Detect OS
     OS=$(detect_os)
     echo -e "${GREEN}Detected OS: ${OS}${NC}"
     
-    # Check and install dependencies (this also sets INSTALL_TYPE)
     check_and_install_dependencies
     
-    # Get config directory
     config_dir=$(get_config_dir "$INSTALL_TYPE" "$OS")
     echo -e "${GREEN}Config directory: ${config_dir}${NC}"
     
-    # Create config directory if needed
     mkdir -p "$config_dir"
     
-    # Backup opencode.json if it exists (for update)
     local json_backup=""
     if [[ -f "$config_dir/opencode.json" ]]; then
         json_backup="${config_dir}/opencode.json.backup.$(date +%Y%m%d_%H%M%S)"
         cp "$config_dir/opencode.json" "$json_backup"
     fi
     
-    # Download repo
     echo -e "${GREEN}Downloading OpenKiloCode...${NC}"
     
     if command -v git &> /dev/null; then
@@ -958,10 +834,7 @@ install() {
             exit 1
         }
         
-        # Remove repo-managed files (will be replaced with fresh copies)
         rm -rf "$config_dir/agents" "$config_dir/skills" 2>/dev/null || true
-        
-        # Copy files (excluding .git and install script)
         cp -r /tmp/openkilocode/{agents,skills} "$config_dir/" 2>/dev/null || true
         rm -rf /tmp/openkilocode
     else
@@ -969,31 +842,25 @@ install() {
         exit 1
     fi
     
-    # Select models based on install type
     models=$(select_models "$INSTALL_TYPE")
     
-    # Update agent markdown files with correct model names
     echo -e "${GREEN}Updating agent models...${NC}"
     update_agent_models "$config_dir" "$INSTALL_TYPE"
     
-    # Generate config (without agent block - agents in markdown)
     echo -e "${GREEN}Generating configuration...${NC}"
     generate_config "$models" "$config_dir" "$INSTALL_TYPE" > "$config_dir/opencode.json"
     
-    # Notify about backup if it exists
     if [[ -n "$json_backup" ]]; then
         echo -e "${YELLOW}Note: Backed up opencode.json to $(basename "$json_backup")${NC}"
-        echo -e "${YELLOW}Review it if you had custom configs you want to keep.${NC}"
     fi
     
-    # Success message
     echo -e "\n${GREEN}═══════════════════════════════════════════════════════════${NC}"
     echo -e "${GREEN}  ✓ OpenKiloCode installed successfully!${NC}"
     echo -e "${GREEN}═══════════════════════════════════════════════════════════${NC}"
     echo ""
     echo -e "Config location: ${CYAN}${config_dir}${NC}"
     echo ""
-    echo -e "${BLUE}Agents (in agents/*.md):${NC}"
+    echo -e "${BLUE}Agents:${NC}"
     echo "  * orchestrator - Primary agent with delegation"
     echo "  * explorer     - Codebase search"
     echo "  * oracle       - Architecture advisor"
@@ -1001,11 +868,6 @@ install() {
     echo "  * designer     - UI/UX specialist"
     echo "  * fixer        - Implementation specialist"
     echo "  * mapper       - Repository mapping"
-    echo ""
-    echo -e "${BLUE}MCP Servers:${NC}"
-    echo "  * websearch  - Web search - add API key to config if needed"
-    echo "  * context7   - Docs lookup - add API key to config if needed"
-    echo "  * grep_app   - GitHub code search"
     echo ""
     
     if [[ "$INSTALL_TYPE" == "kilo" ]]; then
@@ -1017,7 +879,7 @@ install() {
     # Offer to delete install script
     if [[ -n "$0" && "$0" != "-" && -f "$0" ]]; then
         echo ""
-        read -rp "Delete install script? [Y/n]: " delete_choice
+        prompt_read "Delete install script? [Y/n]: " delete_choice
         delete_choice="${delete_choice:-y}"
         if [[ "$delete_choice" =~ ^[Yy] ]]; then
             rm -f "$0"
@@ -1025,10 +887,8 @@ install() {
         fi
     fi
     
-    # Offer to delete opencode.json backup if it exists
     if [[ -n "$json_backup" && -f "$json_backup" ]]; then
-        echo ""
-        read -rp "Delete opencode.json backup? [y/N]: " delete_backup
+        prompt_read "Delete opencode.json backup? [y/N]: " delete_backup
         delete_backup="${delete_backup:-n}"
         if [[ "$delete_backup" =~ ^[Yy] ]]; then
             rm -f "$json_backup"
@@ -1050,7 +910,7 @@ main() {
 ██  ██ ██▄█▀ ██▄▄  ███▄██ ████   ██ ██    ██▀██ ██     ██▀██ ██▀██ ██▄▄  
 ▀████▀ ██    ██▄▄▄ ██ ▀██ ██ ▀█▄ ██ ██▄▄▄ ▀███▀ ▀█████ ▀███▀ ████▀ ██▄▄▄ 
                                                                           
-                                                                                                                               
+                                                                                                                                
 BANNER
     echo -e "${NC}"
     
