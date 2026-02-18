@@ -3,7 +3,7 @@
 Multi-agent configuration for OpenCode with 7 specialized agents and MCP integration.
 
 ```
-___                   _  ___ _        ____          _      
+ ___                   _  ___ _        ____          _      
   / _ \ _ __   ___ _ __ | |/ (_) | ___  / ___|___   __| | ___ 
  | | | | '_ \ / _ \ '_ \| ' /| | |/ _ \| |   / _ \ / _` |/ _ \
  | |_| | |_) |  __/ | | | . \| | | (_) | |__| (_) | (_| |  __/
