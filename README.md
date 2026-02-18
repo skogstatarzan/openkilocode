@@ -1,6 +1,6 @@
-# OpenCode Pantheon
+# OpenKiloCode
 
-Multi-agent configuration for OpenCode with 7 specialized agents and MCP integration.
+Multi-agent configuration for OpenCode and KiloCode CLI with 7 specialized agents and MCP integration.
 
 ```
 ▄▄▄▄▄                     ▄▄▄   ▄▄▄     ▄▄        ▄▄▄▄▄▄▄          ▄▄       
@@ -8,9 +8,13 @@ Multi-agent configuration for OpenCode with 7 specialized agents and MCP integra
 ███   ███ ████▄ ▄█▀█▄ ████▄ ███████   ██  ██ ▄███▄ ███      ▄███▄ ▄████ ▄█▀█▄ 
 ███▄▄▄███ ██ ██ ██▄█▀ ██ ██ ███▀███▄  ██  ██ ██ ██ ███      ██ ██ ██ ██ ██▄█▀ 
  ▀█████▀  ████▀ ▀█▄▄▄ ██ ██ ███  ▀███ ██▄ ██ ▀███▀ ▀███████ ▀███▀ ▀████ ▀█▄▄▄ 
-          ██                                                                  
-          ▀▀                                                                  
+           ██                                                                  
+           ▀▀                                                                  
 ```
+
+This configuration works with **both OpenCode and KiloCode CLI**.
+
+> **Credit**: Built on top of [oh-my-opencode-slim](https://github.com/alvinunreal/oh-my-opencode-slim) by [@alvinunreal](https://github.com/alvinunreal)
 
 ## Quick Start
 
@@ -67,22 +71,24 @@ kilo
 
 ### Edit Agent Prompts
 
+Agent prompts are stored in markdown files with frontmatter:
+
 ```bash
 vim ~/.config/opencode/agents/orchestrator.md
 ```
 
 ### Change Models
 
-Edit `~/.config/opencode/opencode.json`:
+Edit the agent markdown file's frontmatter:
 
-```json
-{
-  "agent": {
-    "orchestrator": {
-      "model": "opencode/gpt-5.1-codex"
-    }
-  }
-}
+```yaml
+---
+description: My custom agent
+mode: subagent
+model: opencode/gpt-5.1-codex
+---
+
+You are a custom agent that does X, Y, Z.
 ```
 
 ### Add Custom Agent
@@ -111,16 +117,14 @@ Skills are reusable instructions that can be enabled per agent.
 
 ### Enable a Skill
 
-In `opencode.json`:
+In the agent markdown file's frontmatter:
 
-```json
-{
-  "agent": {
-    "designer": {
-      "skills": ["agent-browser"]
-    }
-  }
-}
+```yaml
+---
+description: My agent
+mode: subagent
+skill: true
+---
 ```
 
 ## Environment Variables
@@ -136,7 +140,7 @@ export CONTEXT7_API_KEY="your-key"
 ```
 ~/.config/opencode/
 ├── opencode.json       # Main configuration
-├── agents/             # Agent prompts (editable)
+├── agents/             # Agent prompts with frontmatter
 │   ├── orchestrator.md
 │   ├── explorer.md
 │   ├── oracle.md
@@ -152,15 +156,15 @@ export CONTEXT7_API_KEY="your-key"
 
 ## Default Models
 
-| Agent | Default Model |
-|-------|---------------|
-| orchestrator | `opencode/glm-5` |
-| explorer | `opencode/minimax-m2.5` |
-| oracle | `opencode/claude-sonnet-4-6` |
-| librarian | `opencode/gemini-3-flash` |
-| designer | `opencode/gemini-3-flash` |
-| fixer | `opencode/minimax-m2.5` |
-| mapper | `opencode/minimax-m2.5` |
+| Agent | OpenCode Model | KiloCode Model |
+|-------|----------------|----------------|
+| orchestrator | `opencode/glm-5` | `kilo/z-ai/glm-5` |
+| explorer | `opencode/minimax-m2.5` | `kilo/minimax/minimax-m2.5` |
+| oracle | `opencode/claude-sonnet-4-6` | `kilo/anthropic/claude-sonnet-4.6` |
+| librarian | `opencode/gemini-3-flash` | `kilo/google/gemini-3-flash-preview` |
+| designer | `opencode/gemini-3-flash` | `kilo/google/gemini-3-flash-preview` |
+| fixer | `opencode/minimax-m2.5` | `kilo/minimax/minimax-m2.5` |
+| mapper | `opencode/minimax-m2.5` | `kilo/minimax/minimax-m2.5` |
 
 ## Requirements
 

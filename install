@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# OpenCode Pantheon Installer
+# OpenKiloCode Installer
 # Multi-agent configuration for OpenCode
 #
 # Usage:
@@ -129,7 +129,7 @@ parse_args() {
 
 show_help() {
     cat << EOF
-OpenCode Pantheon Installer
+OpenKiloCode Installer
 
 Usage:
   curl -fsSL <url>/install | bash
@@ -201,38 +201,12 @@ prompt_install_type() {
     echo -e "${YELLOW}→ You can do this after installation if needed${NC}"
     echo ""
     read -rp "Press Enter to continue..."
-}
-
-# ============================================
-# API Key Configuration
-# ============================================
-
-prompt_api_keys() {
-    if ! is_interactive; then
-        return
-    fi
     
     echo ""
-    echo -e "${CYAN}═══════════════════════════════════════════════════════════${NC}"
-    echo -e "${CYAN}  API Keys (Optional)${NC}"
-    echo -e "${CYAN}═══════════════════════════════════════════════════════════${NC}"
-    echo ""
-    echo -e "Add API keys directly in config for MCP servers."
-    echo -e "Skip if using environment variables or OAuth."
-    echo ""
-    
-    read -rp "EXA_API_KEY (for websearch): " exa_key
-    read -rp "CONTEXT7_API_KEY (for docs): " context7_key
-    
-    if [[ -n "$exa_key" ]]; then
-        EXA_API_KEY="$exa_key"
-    fi
-    if [[ -n "$context7_key" ]]; then
-        CONTEXT7_API_KEY="$context7_key"
-    fi
-    
-    if [[ -z "$EXA_API_KEY" && -z "$CONTEXT7_API_KEY" ]]; then
-        echo -e "${YELLOW}No keys added. You can add them later in opencode.json if needed.${NC}"
+    if [[ "$INSTALL_TYPE" == "kilo" ]]; then
+        echo -e "${YELLOW}add API keys to ~/.config/kilo/opencode.json if experiencing problems${NC}"
+    else
+        echo -e "${YELLOW}add API keys to ~/.config/opencode/opencode.json if experiencing problems${NC}"
     fi
 }
 
@@ -249,7 +223,7 @@ get_available_models() {
 }
 
 # ============================================
-# Model Selection
+# Model Selection (updates agent markdown files)
 # ============================================
 
 select_models() {
@@ -281,15 +255,60 @@ EOF
 }
 
 # ============================================
-# Generate Config
+# Update agent markdown files with correct models
+# ============================================
+
+update_agent_models() {
+    local config_dir="$1"
+    local install_type="$2"
+    
+    local model_prefix="opencode"
+    if [[ "$install_type" == "kilo" ]]; then
+        model_prefix="kilo"
+    fi
+    
+    # Map agent names to their model configs
+    declare -A model_map
+    if [[ "$install_type" == "kilo" ]]; then
+        model_map=(
+            ["orchestrator"]="kilo/z-ai/glm-5"
+            ["explorer"]="kilo/minimax/minimax-m2.5"
+            ["oracle"]="kilo/anthropic/claude-sonnet-4.6"
+            ["librarian"]="kilo/google/gemini-3-flash-preview"
+            ["designer"]="kilo/google/gemini-3-flash-preview"
+            ["fixer"]="kilo/minimax/minimax-m2.5"
+            ["mapper"]="kilo/minimax/minimax-m2.5"
+        )
+    else
+        model_map=(
+            ["orchestrator"]="opencode/glm-5"
+            ["explorer"]="opencode/minimax-m2.5"
+            ["oracle"]="opencode/claude-sonnet-4-6"
+            ["librarian"]="opencode/gemini-3-flash"
+            ["designer"]="opencode/gemini-3-flash"
+            ["fixer"]="opencode/minimax-m2.5"
+            ["mapper"]="opencode/minimax-m2.5"
+        )
+    fi
+    
+    # Update each agent markdown file
+    for agent in "${!model_map[@]}"; do
+        local agent_file="$config_dir/agents/${agent}.md"
+        if [[ -f "$agent_file" ]]; then
+            # Update model in frontmatter using sed
+            sed -i "s/^model: .*/model: ${model_map[$agent]}/" "$agent_file"
+        fi
+    done
+}
+
+# ============================================
+# Generate Config (without agent block - agents in markdown)
 # ============================================
 
 generate_config() {
     local models="$1"
     local config_dir="$2"
     local install_type="$3"
-    local exa_key="$4"
-    local context7_key="$5"
     
     # Adjust model prefix based on install type
     local model_prefix="opencode"
@@ -297,21 +316,14 @@ generate_config() {
         model_prefix="kilo"
     fi
     
-    # Set API keys or use env var placeholders
-    local exa_header="\"x-api-key\": \"{env:EXA_API_KEY}\""
-    local context7_header="\"CONTEXT7_API_KEY\": \"{env:CONTEXT7_API_KEY}\""
-    
-    if [[ -n "$exa_key" ]]; then
-        exa_header="\"x-api-key\": \"$exa_key\""
-    fi
-    if [[ -n "$context7_key" ]]; then
-        context7_header="\"CONTEXT7_API_KEY\": \"$context7_key\""
-    fi
+    # API keys are empty by default - user can add them manually if needed
+    local exa_header="\"x-api-key\": \"\""
+    local context7_header='"CONTEXT7_API_KEY": ""'
     
     template=$(cat << TPLATE
 {
   "\$schema": "https://opencode.ai/config.json",
-  "model": "${model_prefix}/minimax-minimax-m2.5",
+  "model": "${model_prefix}/minimax-m2.5",
   "mcp": {
     "websearch": {
       "type": "remote",
@@ -336,144 +348,6 @@ generate_config() {
     "websearch_*": false,
     "context7_*": false,
     "grep_app_*": false
-  },
-  "agent": {
-    "orchestrator": {
-      "description": "AI coding orchestrator that delegates tasks to specialist agents for optimal quality, speed, and cost",
-      "mode": "primary",
-      "model": "${model_prefix}/glm-5",
-      "temperature": 0.1,
-      "prompt": "{file:./agents/orchestrator.md}",
-      "tools": {
-        "task": true,
-        "skill": true,
-        "bash": true,
-        "read": true,
-        "glob": true,
-        "grep": true,
-        "websearch_*": true
-      },
-      "permission": {
-        "question": "allow",
-        "skill": {
-          "*": "allow"
-        },
-        "task": {
-          "*": "allow"
-        }
-      }
-    },
-    "explorer": {
-      "description": "Fast codebase search and pattern matching. Use for finding files, locating code patterns, and answering 'where is X?' questions.",
-      "mode": "subagent",
-      "model": "${model_prefix}/minimax-minimax-m2.5",
-      "temperature": 0.1,
-      "prompt": "{file:./agents/explorer.md}",
-      "permission": {
-        "task": {}
-      },
-      "tools": {
-        "grep": true,
-        "glob": true,
-        "ast_grep_search": true,
-        "read": true,
-        "write": false,
-        "edit": false,
-        "bash": false
-      }
-    },
-    "oracle": {
-      "description": "Strategic technical advisor. Use for architecture decisions, complex debugging, code review, and engineering guidance.",
-      "mode": "subagent",
-      "model": "${model_prefix}/anthropic-claude-sonnet-4.6",
-      "temperature": 0.1,
-      "prompt": "{file:./agents/oracle.md}",
-      "permission": {
-        "task": {}
-      },
-      "tools": {
-        "read": true,
-        "grep": true,
-        "glob": true,
-        "lsp_goto_definition": true,
-        "lsp_find_references": true,
-        "write": false,
-        "edit": false,
-        "bash": false
-      }
-    },
-    "librarian": {
-      "description": "External documentation and library research. Use for official docs lookup, GitHub examples, and understanding library internals.",
-      "mode": "subagent",
-      "model": "${model_prefix}/google-gemini-3-flash-preview",
-      "temperature": 0.1,
-      "prompt": "{file:./agents/librarian.md}",
-      "permission": {
-        "task": {}
-      },
-      "tools": {
-        "websearch_*": true,
-        "context7_*": true,
-        "grep_app_*": true
-      }
-    },
-    "designer": {
-      "description": "UI/UX design and implementation. Use for styling, responsive design, component architecture and visual polish.",
-      "mode": "subagent",
-      "model": "${model_prefix}/google-gemini-3-flash-preview",
-      "temperature": 0.7,
-      "prompt": "{file:./agents/designer.md}",
-      "permission": {
-        "task": {
-          "explorer": "allow"
-        }
-      },
-      "tools": {
-        "read": true,
-        "write": true,
-        "edit": true,
-        "glob": true,
-        "grep": true
-      }
-    },
-    "fixer": {
-      "description": "Fast implementation specialist. Receives complete context and task spec, executes code changes efficiently.",
-      "mode": "subagent",
-      "model": "${model_prefix}/minimax-minimax-m2.5",
-      "temperature": 0.2,
-      "prompt": "{file:./agents/fixer.md}",
-      "permission": {
-        "task": {
-          "explorer": "allow"
-        }
-      },
-      "tools": {
-        "read": true,
-        "write": true,
-        "edit": true,
-        "glob": true,
-        "grep": true,
-        "bash": true,
-        "lsp_diagnostics": true
-      }
-    },
-    "mapper": {
-      "description": "Repository mapper for cartography. Creates and updates codemap.md files to document codebase architecture.",
-      "mode": "subagent",
-      "model": "${model_prefix}/minimax-minimax-m2.5",
-      "temperature": 0.1,
-      "prompt": "{file:./agents/mapper.md}",
-      "permission": {
-        "task": {}
-      },
-      "tools": {
-        "read": true,
-        "write": true,
-        "edit": true,
-        "glob": true,
-        "grep": true
-      }
-    }
   }
 }
 TPLATE
@@ -498,7 +372,6 @@ install() {
     
     # Interactive prompts
     prompt_install_type
-    prompt_api_keys
     
     # Get config directory
     config_dir=$(get_config_dir "$INSTALL_TYPE" "$os")
@@ -528,10 +401,10 @@ install() {
     fi
     
     # Download repo
-    echo -e "${GREEN}Downloading OpenCode Pantheon...${NC}"
+    echo -e "${GREEN}Downloading OpenKiloCode...${NC}"
     
     if command -v git &> /dev/null; then
-        git clone --depth 1 --branch "$REPO_BRANCH" "$REPO_URL" /tmp/opencode-pantheon 2>/dev/null || {
+        git clone --depth 1 --branch "$REPO_BRANCH" "$REPO_URL" /tmp/openkilocode 2>/dev/null || {
             echo -e "${RED}Failed to clone repository${NC}"
             exit 1
         }
@@ -540,8 +413,8 @@ install() {
         rm -rf "$config_dir/agents" "$config_dir/skills" 2>/dev/null || true
         
         # Copy files (excluding .git and install script)
-        cp -r /tmp/opencode-pantheon/{agents,skills} "$config_dir/" 2>/dev/null || true
-        rm -rf /tmp/opencode-pantheon
+        cp -r /tmp/openkilocode/{agents,skills} "$config_dir/" 2>/dev/null || true
+        rm -rf /tmp/openkilocode
     else
         echo -e "${RED}Git is required for installation${NC}"
         exit 1
@@ -550,9 +423,13 @@ install() {
     # Select models based on install type
     models=$(select_models "$INSTALL_TYPE")
     
-    # Generate config
+    # Update agent markdown files with correct model names
+    echo -e "${GREEN}Updating agent models...${NC}"
+    update_agent_models "$config_dir" "$INSTALL_TYPE"
+    
+    # Generate config (without agent block - agents in markdown)
     echo -e "${GREEN}Generating configuration...${NC}"
-    generate_config "$models" "$config_dir" "$INSTALL_TYPE" "$EXA_API_KEY" "$CONTEXT7_API_KEY" > "$config_dir/opencode.json"
+    generate_config "$models" "$config_dir" "$INSTALL_TYPE" > "$config_dir/opencode.json"
     
     # Notify about backup if it exists
     if [[ -n "$json_backup" ]]; then
@@ -562,24 +439,24 @@ install() {
     
     # Success message
     echo -e "\n${GREEN}═══════════════════════════════════════════════════════════${NC}"
-    echo -e "${GREEN}  ✓ OpenCode Pantheon installed successfully!${NC}"
+    echo -e "${GREEN}  ✓ OpenKiloCode installed successfully!${NC}"
     echo -e "${GREEN}═══════════════════════════════════════════════════════════${NC}"
     echo ""
     echo -e "Config location: ${CYAN}${config_dir}${NC}"
     echo ""
-    echo -e "${BLUE}Agents:${NC}"
-    echo "  • orchestrator - Primary agent with delegation"
-    echo "  • explorer     - Codebase search"
-    echo "  • oracle       - Architecture advisor"
-    echo "  • librarian    - Documentation research"
-    echo "  • designer     - UI/UX specialist"
-    echo "  • fixer        - Implementation specialist"
-    echo "  • mapper       - Repository mapping"
+    echo -e "${BLUE}Agents (in agents/*.md):${NC}"
+    echo "  * orchestrator - Primary agent with delegation"
+    echo "  * explorer     - Codebase search"
+    echo "  * oracle       - Architecture advisor"
+    echo "  * librarian    - Documentation research"
+    echo "  * designer     - UI/UX specialist"
+    echo "  * fixer        - Implementation specialist"
+    echo "  * mapper       - Repository mapping"
     echo ""
     echo -e "${BLUE}MCP Servers:${NC}"
-    echo "  • websearch  - Web search (set EXA_API_KEY)"
-    echo "  • context7   - Docs lookup (set CONTEXT7_API_KEY)"
-    echo "  • grep_app   - GitHub code search"
+    echo "  * websearch  - Web search - add API key to config if needed"
+    echo "  * context7   - Docs lookup - add API key to config if needed"
+    echo "  * grep_app   - GitHub code search"
     echo ""
     
     if [[ "$INSTALL_TYPE" == "kilo" ]]; then
@@ -618,8 +495,8 @@ install() {
 main() {
     echo -e "${CYAN}"
     cat << 'BANNER'                                                                              
-                                                                        
                                                                          
+                                                                          
 ▄████▄ ▄▄▄▄  ▄▄▄▄▄ ▄▄  ▄▄ ██ ▄█▀ ▄▄ ▄▄     ▄▄▄  ▄█████  ▄▄▄  ▄▄▄▄  ▄▄▄▄▄ 
 ██  ██ ██▄█▀ ██▄▄  ███▄██ ████   ██ ██    ██▀██ ██     ██▀██ ██▀██ ██▄▄  
 ▀████▀ ██    ██▄▄▄ ██ ▀██ ██ ▀█▄ ██ ██▄▄▄ ▀███▀ ▀█████ ▀███▀ ████▀ ██▄▄▄ 
