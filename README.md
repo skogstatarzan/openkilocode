@@ -11,7 +11,7 @@ Multi-agent configuration for OpenCode and KiloCode CLI with 7 specialized agent
 
 This configuration works with **both OpenCode and KiloCode CLI**.
 
-> **Credit**: Built on top of [oh-my-opencode-slim](https://github.com/alvinunreal/oh-my-opencode-slim) by [@alvinunreal](https://github.com/alvinunreal)
+> **Credits**: Built on top of [oh-my-opencode-slim](https://github.com/alvinunreal/oh-my-opencode-slim) by [@alvinunreal](https://github.com/alvinunreal) • Worktree plugin by [@kdcokenny](https://github.com/kdcokenny)
 
 ## Quick Start
 
@@ -26,8 +26,9 @@ curl -fsSL https://raw.githubusercontent.com/skogstatarzan/openkilocode/main/ins
 - ✅ Installs OpenCode or KiloCode CLI if not present
 - ✅ Installs agent-browser for web automation
 - ✅ Configures all agents and MCP servers
+- ✅ Optionally installs worktree plugin for parallel AI agents
 
-You'll be asked to choose between **OpenCode** or **KiloCode CLI**. Models are auto-selected per agent.
+You'll be asked to choose between **OpenCode** or **KiloCode CLI**, and whether to install the **worktree plugin** (optional). Models are auto-selected per agent.
 
 > **Note**: Connect to OpenCode Zen or Kilo Gateway for the default models to work.
 
@@ -50,6 +51,8 @@ The orchestrator also uses **skills** when beneficial:
 - **websearch** → Web search (Exa)
 - **context7** → Official documentation lookup
 - **grep_app** → GitHub code search
+
+For parallel development, the optional **worktree plugin** enables multiple agents to work on different features simultaneously without conflicts.
 
 Most users only need to interact with the orchestrator—it handles delegation and MCP/skills automatically.
 
@@ -97,6 +100,32 @@ Skills are reusable instructions that can be enabled per agent.
 | **cartography** | Repository mapping & codemap generation |
 | **simplify** | Code simplification & refinement |
 | **agent-browser** | Browser automation for testing |
+
+## Parallel Development with Worktrees
+
+The optional **worktree plugin** enables multiple AI agents to work on the same project simultaneously without conflicts. Each agent gets its own isolated git worktree—a separate working directory that shares the same repository.
+
+### How It Works
+
+1. **Create a worktree** — Ask the AI to make changes in a new worktree:
+   ```
+   Create a new dark mode feature in a new worktree
+   ```
+
+2. **Work in isolation** — The AI works in a separate directory with its own branch. Other agents can work on different features in parallel.
+
+3. **Merge and cleanup** — When done, prompt the AI to merge changes back simply by typing:
+   ```
+   worktree delete
+   ```
+   This commits any remaining changes, merges with the main branch, and removes the worktree.
+
+### Benefits
+
+- 🔄 **Parallel agents** — Multiple AI sessions can work on different features simultaneously
+- 🛡️ **No conflicts** — Each worktree has its own working directory and branch
+- 🧹 **Auto cleanup** — Worktrees are automatically cleaned up when sessions end
+- 📁 **File sync** — Configured files (like `.env`) are automatically copied to new worktrees
 
 ## API Keys
 

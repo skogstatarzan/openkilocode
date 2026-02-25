@@ -914,6 +914,93 @@ update_agent_models() {
     fi
 }
 
+# ============================================
+# Worktree Plugin
+# ============================================
+
+install_worktree_plugin() {
+    echo -e "\n${BLUE}Installing OCX package manager...${NC}"
+    
+    # Install OCX
+    if ! curl -fsSL https://ocx.kdco.dev/install.sh | sh; then
+        echo -e "${RED}Failed to install OCX${NC}"
+        return 1
+    fi
+    
+    # Refresh PATH
+    hash -r 2>/dev/null || true
+    export PATH="$HOME/.local/bin:$PATH"
+    
+    # Verify OCX is available
+    if ! command -v ocx &> /dev/null; then
+        echo -e "${YELLOW}OCX installed but not in PATH. You may need to restart your terminal.${NC}"
+        echo -e "${YELLOW}After restart, run:${NC}"
+        echo -e "${YELLOW}  ocx init --global${NC}"
+        echo -e "${YELLOW}  ocx registry add https://registry.kdco.dev --name kdco --global${NC}"
+        echo -e "${YELLOW}  ocx add kdco/worktree --global${NC}"
+        echo -e "${YELLOW}  cd ~/.config/opencode && bun install${NC}"
+        return 0
+    fi
+    
+    # Initialize OCX globally
+    echo -e "${BLUE}Initializing OCX globally...${NC}"
+    ocx init --global
+    
+    # Add KDCO registry globally (ignore if already exists)
+    echo -e "${BLUE}Adding KDCO registry globally...${NC}"
+    ocx registry add https://registry.kdco.dev --name kdco --global 2>/dev/null || true
+    
+    # Install worktree plugin globally (ignore if already installed)
+    echo -e "${BLUE}Installing worktree plugin globally...${NC}"
+    ocx add kdco/worktree --global 2>/dev/null || true
+    
+    # Install plugin dependencies
+    local config_dir
+    config_dir=$(get_config_dir "opencode" "$OS")
+    
+    if [[ -f "$config_dir/package.json" ]]; then
+        echo -e "${BLUE}Installing plugin dependencies...${NC}"
+        
+        # Fix potentially incorrect version in package.json
+        # OCX may generate a version that doesn't exist yet
+        local pkg_file="$config_dir/package.json"
+        if grep -q '"@opencode-ai/plugin"' "$pkg_file" 2>/dev/null; then
+            # Get latest available version and update package.json
+            local latest_version
+            latest_version=$(npm view @opencode-ai/plugin version 2>/dev/null || echo "1.2.12")
+            sed 's/"@opencode-ai\/plugin": "[^"]*"/"@opencode-ai\/plugin": "'"$latest_version"'"/' "$pkg_file" > "$pkg_file.tmp" && mv "$pkg_file.tmp" "$pkg_file" 2>/dev/null || true
+        fi
+        
+        # Prefer bun if available (faster), otherwise use npm
+        if command -v bun &> /dev/null; then
+            (cd "$config_dir" && bun install)
+        elif command -v npm &> /dev/null; then
+            (cd "$config_dir" && npm install)
+        else
+            echo -e "${YELLOW}Neither bun nor npm found. Please install dependencies manually:${NC}"
+            echo -e "${YELLOW}  cd $config_dir && npm install${NC}"
+        fi
+    fi
+    
+    echo -e "${GREEN}✓ Worktree plugin installed!${NC}"
+}
+
+prompt_worktree_plugin() {
+    echo -e "\n${CYAN}═══════════════════════════════════════════════════════════${NC}"
+    echo -e "${CYAN}  Worktree Plugin${NC}"
+    echo -e "${CYAN}═══════════════════════════════════════════════════════════${NC}"
+    echo ""
+    echo "Enables parallel AI agents working on the same project"
+    echo "without conflicts - each in its own isolated environment."
+    echo ""
+    prompt_read "Install worktree plugin? [y/N]: " install_plugin
+    install_plugin="${install_plugin:-n}"
+    
+    if [[ "$install_plugin" =~ ^[Yy] ]]; then
+        install_worktree_plugin
+    fi
+}
+
 generate_config() {
     local models="$1"
     local config_dir="$2"
@@ -1041,6 +1128,9 @@ install() {
     else
         echo -e "${YELLOW}Run 'opencode' to start!${NC}"
     fi
+    
+    # Ask about worktree plugin after main installation
+    prompt_worktree_plugin
     
     if [[ -n "$json_backup" && -f "$json_backup" ]]; then
         prompt_read "Delete opencode.json backup? [y/N]: " delete_backup
