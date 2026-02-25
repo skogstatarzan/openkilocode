@@ -244,6 +244,105 @@ print_status() {
 }
 
 # ============================================
+# KiloCode Installation Type Detection
+# ============================================
+
+# Check if kilo is installed via old method (standalone binary in ~/.kilo/bin/)
+is_old_kilo_installation() {
+    local kilo_path
+    kilo_path=$(command -v kilo 2>/dev/null || echo "")
+    
+    if [[ -z "$kilo_path" ]]; then
+        return 1
+    fi
+    
+    # Check if it's the old standalone binary location
+    # Old installer used $HOME/.kilo/bin for all platforms (Linux, macOS, Windows)
+    if [[ "$kilo_path" == "$HOME/.kilo/bin/kilo" ]] || [[ "$kilo_path" == "$HOME/.kilo/bin/kilo.exe" ]]; then
+        return 0
+    fi
+    
+    # Also check if ~/.kilo/bin/kilo exists as a binary (not symlink to npm)
+    local old_kilo_bin="$HOME/.kilo/bin/kilo"
+    if [[ -f "$old_kilo_bin" ]] || [[ -f "$old_kilo_bin.exe" ]]; then
+        # Check if it's NOT a symlink to node_modules (which would be the new npm install)
+        if [[ -L "$old_kilo_bin" ]]; then
+            local link_target
+            link_target=$(readlink -f "$old_kilo_bin" 2>/dev/null || readlink "$old_kilo_bin" 2>/dev/null || echo "")
+            if [[ "$link_target" == *"node_modules"* ]] || [[ "$link_target" == *"@kilocode"* ]]; then
+                return 1
+            fi
+        fi
+        # It's a standalone binary
+        return 0
+    fi
+    
+    return 1
+}
+
+# Check if kilo is installed via new method (npm @kilocode/cli)
+is_new_kilo_installation() {
+    local kilo_path
+    kilo_path=$(command -v kilo 2>/dev/null || echo "")
+    
+    if [[ -z "$kilo_path" ]]; then
+        return 1
+    fi
+    
+    # Check if it's from npm (symlink to node_modules/@kilocode/cli)
+    if [[ "$kilo_path" == *"node_modules/@kilocode/cli"* ]]; then
+        return 0
+    fi
+    
+    # Check if it's a symlink pointing to @kilocode/cli
+    if [[ -L "$kilo_path" ]]; then
+        local link_target
+        link_target=$(readlink -f "$kilo_path" 2>/dev/null || readlink "$kilo_path" 2>/dev/null || echo "")
+        if [[ "$link_target" == *"@kilocode/cli"* ]]; then
+            return 0
+        fi
+    fi
+    
+    # Check if npm global has @kilocode/cli
+    if npm list -g @kilocode/cli 2>/dev/null | grep -q "@kilocode/cli"; then
+        return 0
+    fi
+    
+    return 1
+}
+
+# Get old kilo installation directory
+get_old_kilo_dir() {
+    # Old installer used $HOME/.kilo for all platforms
+    echo "$HOME/.kilo"
+}
+
+# Remove old kilo installation
+remove_old_kilo_installation() {
+    local old_dir
+    old_dir=$(get_old_kilo_dir)
+    
+    echo -e "\n${CYAN}═══════════════════════════════════════════════════════════${NC}"
+    echo -e "${CYAN}  Removing Old KiloCode Installation${NC}"
+    echo -e "${CYAN}═══════════════════════════════════════════════════════════${NC}"
+    echo ""
+    echo -e "${YELLOW}Found old KiloCode installation (standalone binary).${NC}"
+    echo -e "${YELLOW}This will be removed and replaced with the new npm-based version.${NC}"
+    echo ""
+    echo -e "  Old location: ${BLUE}${old_dir}${NC}"
+    echo ""
+    
+    if [[ -d "$old_dir" ]]; then
+        echo -e "${BLUE}Removing old installation...${NC}"
+        rm -rf "$old_dir"
+        echo -e "${GREEN}✓ Old installation removed${NC}"
+    fi
+    
+    # Refresh PATH cache
+    hash -r 2>/dev/null || true
+}
+
+# ============================================
 # Package Manager Detection
 # ============================================
 
@@ -438,7 +537,10 @@ install_agent_browser() {
 }
 
 install_opencode() {
-    echo -e "${BLUE}Installing OpenCode...${NC}"
+    echo -e "\n${CYAN}═══════════════════════════════════════════════════════════${NC}"
+    echo -e "${CYAN}  Installing OpenCode${NC}"
+    echo -e "${CYAN}═══════════════════════════════════════════════════════════${NC}"
+    echo ""
     
     if [[ "$OS" == "windows" ]]; then
         npm install -g opencode-ai@latest
@@ -458,9 +560,14 @@ install_opencode() {
 }
 
 install_kilocode() {
-    echo -e "${BLUE}Installing KiloCode CLI...${NC}"
+    echo -e "\n${CYAN}═══════════════════════════════════════════════════════════${NC}"
+    echo -e "${CYAN}  Installing KiloCode CLI${NC}"
+    echo -e "${CYAN}═══════════════════════════════════════════════════════════${NC}"
+    echo ""
     
+    echo -e "${BLUE}Installing via npm: @kilocode/cli${NC}"
     npm install -g @kilocode/cli
+    
     hash -r 2>/dev/null || true
     
     if check_command kilo; then
@@ -470,6 +577,37 @@ install_kilocode() {
         echo -e "${YELLOW}KiloCode CLI installed. You may need to restart your terminal.${NC}"
         return 0
     fi
+}
+
+# Upgrade existing installation
+upgrade_opencode() {
+    echo -e "\n${CYAN}═══════════════════════════════════════════════════════════${NC}"
+    echo -e "${CYAN}  Upgrading OpenCode${NC}"
+    echo -e "${CYAN}═══════════════════════════════════════════════════════════${NC}"
+    echo ""
+    echo -e "${BLUE}Running: opencode upgrade${NC}"
+    echo ""
+    
+    # Run upgrade and show output (don't capture, let it display)
+    opencode upgrade || true
+    
+    echo ""
+    echo -e "${GREEN}✓ OpenCode upgrade complete${NC}"
+}
+
+upgrade_kilocode() {
+    echo -e "\n${CYAN}═══════════════════════════════════════════════════════════${NC}"
+    echo -e "${CYAN}  Upgrading KiloCode CLI${NC}"
+    echo -e "${CYAN}═══════════════════════════════════════════════════════════${NC}"
+    echo ""
+    echo -e "${BLUE}Running: kilo upgrade${NC}"
+    echo ""
+    
+    # Run upgrade and show output (don't capture, let it display)
+    kilo upgrade || true
+    
+    echo ""
+    echo -e "${GREEN}✓ KiloCode CLI upgrade complete${NC}"
 }
 
 # ============================================
@@ -488,7 +626,7 @@ check_and_install_dependencies() {
     echo -e "${CYAN}═══════════════════════════════════════════════════════════${NC}"
     echo ""
     
-    # Check package manager
+    # Check package manager (only for macos/windows)
     if [[ "$OS" == "macos" ]]; then
         if check_command brew; then
             print_status "Homebrew" "true" "$(get_version brew)" "true"
@@ -515,7 +653,7 @@ check_and_install_dependencies() {
         missing_deps+=("git")
     fi
     
-    # Check npm
+    # Check npm (required for all platforms)
     if check_command npm; then
         print_status "npm/Node.js" "true" "$(get_version npm)" "true"
     else
@@ -534,6 +672,8 @@ check_and_install_dependencies() {
     # Check OpenCode and KiloCode
     local has_opencode=false
     local has_kilo=false
+    local has_old_kilo=false
+    local has_new_kilo=false
     
     if check_command opencode; then
         print_status "OpenCode" "true" "$(get_version opencode)" "false"
@@ -545,6 +685,13 @@ check_and_install_dependencies() {
     if check_command kilo; then
         print_status "KiloCode CLI" "true" "$(get_version kilo)" "false"
         has_kilo=true
+        
+        # Detect installation type (silently)
+        if is_old_kilo_installation; then
+            has_old_kilo=true
+        elif is_new_kilo_installation; then
+            has_new_kilo=true
+        fi
     else
         print_status "KiloCode CLI" "false" "" "false"
     fi
@@ -632,8 +779,16 @@ check_and_install_dependencies() {
         
         if [[ "$choice" == "2" ]]; then
             INSTALL_TYPE="kilo"
+            # Handle old kilo installation
+            if [[ "$has_old_kilo" == "true" ]]; then
+                remove_old_kilo_installation
+                install_kilocode || exit 1
+            elif [[ "$has_new_kilo" == "true" ]]; then
+                upgrade_kilocode
+            fi
         else
             INSTALL_TYPE="opencode"
+            upgrade_opencode
         fi
     elif [[ "$has_opencode" == "true" ]]; then
         # Only OpenCode installed
@@ -651,6 +806,7 @@ check_and_install_dependencies() {
             INSTALL_TYPE="kilo"
         else
             INSTALL_TYPE="opencode"
+            upgrade_opencode
         fi
     elif [[ "$has_kilo" == "true" ]]; then
         # Only KiloCode installed
@@ -668,6 +824,13 @@ check_and_install_dependencies() {
             INSTALL_TYPE="opencode"
         else
             INSTALL_TYPE="kilo"
+            # Handle old kilo installation
+            if [[ "$has_old_kilo" == "true" ]]; then
+                remove_old_kilo_installation
+                install_kilocode || exit 1
+            elif [[ "$has_new_kilo" == "true" ]]; then
+                upgrade_kilocode
+            fi
         fi
     else
         # Neither installed - ask which to install
@@ -826,7 +989,10 @@ install() {
         cp "$config_dir/opencode.json" "$json_backup"
     fi
     
-    echo -e "${GREEN}Downloading OpenKiloCode...${NC}"
+    echo -e "\n${CYAN}═══════════════════════════════════════════════════════════${NC}"
+    echo -e "${CYAN}  Downloading OpenKiloCode Configuration${NC}"
+    echo -e "${CYAN}═══════════════════════════════════════════════════════════${NC}"
+    echo ""
     
     if command -v git &> /dev/null; then
         git clone --depth 1 --branch "$REPO_BRANCH" "$REPO_URL" /tmp/openkilocode 2>&1 || {
@@ -844,10 +1010,10 @@ install() {
     
     models=$(select_models "$INSTALL_TYPE")
     
-    echo -e "${GREEN}Updating agent models...${NC}"
+    echo -e "${BLUE}Updating agent models...${NC}"
     update_agent_models "$config_dir" "$INSTALL_TYPE"
     
-    echo -e "${GREEN}Generating configuration...${NC}"
+    echo -e "${BLUE}Generating configuration...${NC}"
     generate_config "$models" "$config_dir" "$INSTALL_TYPE" > "$config_dir/opencode.json"
     
     if [[ -n "$json_backup" ]]; then
@@ -893,13 +1059,13 @@ install() {
 main() {
     echo -e "${CYAN}"
     cat << 'BANNER'                                                                              
-                                                                          
                                                                            
+                                                                            
 ▄████▄ ▄▄▄▄  ▄▄▄▄▄ ▄▄  ▄▄ ██ ▄█▀ ▄▄ ▄▄     ▄▄▄  ▄█████  ▄▄▄  ▄▄▄▄  ▄▄▄▄▄ 
 ██  ██ ██▄█▀ ██▄▄  ███▄██ ████   ██ ██    ██▀██ ██     ██▀██ ██▀██ ██▄▄  
 ▀████▀ ██    ██▄▄▄ ██ ▀██ ██ ▀█▄ ██ ██▄▄▄ ▀███▀ ▀█████ ▀███▀ ████▀ ██▄▄▄ 
-                                                                          
-                                                                                                                                
+                                                                           
+                                                                                                                                 
 BANNER
     echo -e "${NC}"
     
