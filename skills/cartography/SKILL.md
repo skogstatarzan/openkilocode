@@ -100,7 +100,6 @@ Defines agent personalities and manages their configuration lifecycle.
 ## Design
 Each agent is a prompt + permission set. Config system uses:
 - Default prompts (coordinator.md, explorer.md, etc.)
-- User overrides from ~/.config/opencode/oh-my-opencode-slim.json
 - Permission wildcards for skill/MCP access control
 
 ## Flow
