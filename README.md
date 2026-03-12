@@ -97,8 +97,8 @@ Custom slash commands for common workflows:
 
 | Command | Description |
 |---------|-------------|
-| `/wt-new <name> [base]` | Start a new feature in an isolated git worktree |
-| `/wt-close <reason>` | Mark feature complete and close the worktree |
+| `/wt-new YOUR_PROMPT` | Start a new feature in an isolated git worktree |
+| `/wt-close` | Commit changes, merge, and close the worktree |
 
 ### Worktree Commands
 
@@ -106,11 +106,11 @@ These commands streamline parallel development:
 
 ```bash
 # Start a new feature
-/wt-new user-authentication
-/wt-new dark-mode develop    # with custom base branch
+/wt-new add dark mode toggle to settings
+/wt-new implement user authentication
 
-# Close when done
-/wt-close implemented OAuth2 login
+# Close when done (commits and merges automatically)
+/wt-close
 ```
 
 ## Skills
