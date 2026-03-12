@@ -1087,8 +1087,8 @@ install() {
             exit 1
         }
         
-        rm -rf "$config_dir/agents" "$config_dir/skills" 2>/dev/null || true
-        cp -r /tmp/openkilocode/{agents,skills} "$config_dir/" 2>/dev/null || true
+        rm -rf "$config_dir/agents" "$config_dir/skills" "$config_dir/commands" 2>/dev/null || true
+        cp -r /tmp/openkilocode/{agents,skills,commands} "$config_dir/" 2>/dev/null || true
         rm -rf /tmp/openkilocode
     else
         echo -e "${RED}Git is required for installation${NC}"

@@ -91,6 +91,28 @@ vim ~/.config/kilo/agents/orchestrator.md
 
 For advanced customization (custom agents, models, skills), see the [OpenCode Agents Docs](https://opencode.ai/docs/agents) and [OpenCode Skills Docs](https://opencode.ai/docs/skills).
 
+## Commands
+
+Custom slash commands for common workflows:
+
+| Command | Description |
+|---------|-------------|
+| `/wt-new <name> [base]` | Start a new feature in an isolated git worktree |
+| `/wt-close <reason>` | Mark feature complete and close the worktree |
+
+### Worktree Commands
+
+These commands streamline parallel development:
+
+```bash
+# Start a new feature
+/wt-new user-authentication
+/wt-new dark-mode develop    # with custom base branch
+
+# Close when done
+/wt-close implemented OAuth2 login
+```
+
 ## Skills
 
 Skills are reusable instructions that can be enabled per agent.
@@ -162,6 +184,9 @@ Add API keys in `opencode.json` if experiencing issues (optional):
 │   ├── designer.md
 │   ├── fixer.md
 │   └── mapper.md
+├── commands/           # Custom slash commands
+│   ├── wt-new.md
+│   └── wt-close.md
 └── skills/             # Skills
     ├── cartography/
     ├── simplify/
@@ -178,6 +203,9 @@ Add API keys in `opencode.json` if experiencing issues (optional):
 │   ├── designer.md
 │   ├── fixer.md
 │   └── mapper.md
+├── commands/           # Custom slash commands
+│   ├── wt-new.md
+│   └── wt-close.md
 └── skills/             # Skills
     ├── cartography/
     ├── simplify/
