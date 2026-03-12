@@ -865,7 +865,7 @@ select_models() {
     
     if [[ "$install_type" == "kilo" ]]; then
         cat << 'EOF'
-orchestrator=kilo/z-ai/glm-5
+coordinator=kilo/z-ai/glm-5
 explorer=kilo/minimax/minimax-m2.5
 oracle=kilo/anthropic/claude-sonnet-4.6
 librarian=kilo/google/gemini-3-flash-preview
@@ -876,7 +876,7 @@ default=kilo/minimax/minimax-m2.5
 EOF
     else
         cat << 'EOF'
-orchestrator=opencode/glm-5
+coordinator=opencode/glm-5
 explorer=opencode/minimax-m2.5
 oracle=opencode/claude-sonnet-4-6
 librarian=opencode/gemini-3-flash
@@ -896,7 +896,7 @@ update_agent_models() {
     sed_flag=$(get_sed_inplace_flag)
     
     if [[ "$install_type" == "kilo" ]]; then
-        sed $sed_flag 's|^model: .*|model: kilo/z-ai/glm-5|' "$config_dir/agents/orchestrator.md"
+        sed $sed_flag 's|^model: .*|model: kilo/z-ai/glm-5|' "$config_dir/agents/coordinator.md"
         sed $sed_flag 's|^model: .*|model: kilo/minimax/minimax-m2.5|' "$config_dir/agents/explorer.md"
         sed $sed_flag 's|^model: .*|model: kilo/anthropic/claude-sonnet-4.6|' "$config_dir/agents/oracle.md"
         sed $sed_flag 's|^model: .*|model: kilo/google/gemini-3-flash-preview|' "$config_dir/agents/librarian.md"
@@ -904,7 +904,7 @@ update_agent_models() {
         sed $sed_flag 's|^model: .*|model: kilo/minimax/minimax-m2.5|' "$config_dir/agents/fixer.md"
         sed $sed_flag 's|^model: .*|model: kilo/minimax/minimax-m2.5|' "$config_dir/agents/mapper.md"
     else
-        sed $sed_flag 's|^model: .*|model: opencode/glm-5|' "$config_dir/agents/orchestrator.md"
+        sed $sed_flag 's|^model: .*|model: opencode/glm-5|' "$config_dir/agents/coordinator.md"
         sed $sed_flag 's|^model: .*|model: opencode/minimax-m2.5|' "$config_dir/agents/explorer.md"
         sed $sed_flag 's|^model: .*|model: opencode/claude-sonnet-4-6|' "$config_dir/agents/oracle.md"
         sed $sed_flag 's|^model: .*|model: opencode/gemini-3-flash|' "$config_dir/agents/librarian.md"
@@ -1017,7 +1017,7 @@ generate_config() {
     template=$(cat << TPLATE
 {
   "\$schema": "https://opencode.ai/config.json",
-  "default_agent": "orchestrator",
+  "default_agent": "coordinator",
   "model": "${model_prefix}/minimax-m2.5",
   "mcp": {
     "websearch": {
@@ -1114,7 +1114,7 @@ install() {
     echo -e "Config location: ${CYAN}${config_dir}${NC}"
     echo ""
     echo -e "${BLUE}Agents:${NC}"
-    echo "  * orchestrator - Primary agent with delegation"
+    echo "  * coordinator - Primary agent with delegation"
     echo "  * explorer     - Codebase search"
     echo "  * oracle       - Architecture advisor"
     echo "  * librarian    - Documentation research"

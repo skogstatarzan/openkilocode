@@ -34,7 +34,7 @@ You'll be asked to choose between **OpenCode** or **KiloCode CLI**, and whether 
 
 ## How It Works
 
-This configuration comes pre-configured with **orchestrator** as the default agent, which automatically delegates tasks to specialist subagents based on the task:
+This configuration comes pre-configured with **coordinator** as the default agent, which automatically delegates tasks to specialist subagents based on the task:
 
 - **@explorer** → Codebase search & discovery
 - **@librarian** → Documentation lookup
@@ -43,7 +43,7 @@ This configuration comes pre-configured with **orchestrator** as the default age
 - **@fixer** → Fast implementation
 - **@mapper** → Repository mapping
 
-The orchestrator also uses **skills** when beneficial:
+The coordinator also uses **skills** when beneficial:
 - **cartography** → Maps codebase structure (automatically when you ask to understand/map the codebase or by simply input 'cartography')
 - **simplify** → Automatically refines code after changes for clarity
 
@@ -54,7 +54,7 @@ The orchestrator also uses **skills** when beneficial:
 
 For parallel development, the optional **worktree plugin** enables multiple agents to work on different features simultaneously without conflicts.
 
-Most users only need to interact with the orchestrator—it handles delegation and MCP/skills automatically.
+Most users only need to interact with the coordinator—it handles delegation and MCP/skills automatically.
 
 ## Usage
 
@@ -83,10 +83,10 @@ Agent prompts are stored in markdown files with frontmatter:
 
 ```bash
 # For OpenCode
-vim ~/.config/opencode/agents/orchestrator.md
+vim ~/.config/opencode/agents/coordinator.md
 
 # For KiloCode CLI
-vim ~/.config/kilo/agents/orchestrator.md
+vim ~/.config/kilo/agents/coordinator.md
 ```
 
 For advanced customization (custom agents, models, skills), see the [OpenCode Agents Docs](https://opencode.ai/docs/agents) and [OpenCode Skills Docs](https://opencode.ai/docs/skills).
@@ -177,7 +177,7 @@ Add API keys in `opencode.json` if experiencing issues (optional):
 ~/.config/opencode/
 ├── opencode.json       # Main configuration
 ├── agents/             # Agent prompts with frontmatter
-│   ├── orchestrator.md
+│   ├── coordinator.md
 │   ├── explorer.md
 │   ├── oracle.md
 │   ├── librarian.md
@@ -196,7 +196,7 @@ Add API keys in `opencode.json` if experiencing issues (optional):
 ~/.config/kilo/
 ├── opencode.json       # Main configuration
 ├── agents/             # Agent prompts with frontmatter
-│   ├── orchestrator.md
+│   ├── coordinator.md
 │   ├── explorer.md
 │   ├── oracle.md
 │   ├── librarian.md
@@ -218,7 +218,7 @@ Add API keys in `opencode.json` if experiencing issues (optional):
 
 | Agent | OpenCode Model | KiloCode Model |
 |-------|----------------|----------------|
-| orchestrator | `opencode/glm-5` | `kilo/z-ai/glm-5` |
+| coordinator | `opencode/glm-5` | `kilo/z-ai/glm-5` |
 | explorer | `opencode/minimax-m2.5` | `kilo/minimax/minimax-m2.5` |
 | oracle | `opencode/claude-sonnet-4-6` | `kilo/anthropic/claude-sonnet-4.6` |
 | librarian | `opencode/gemini-3-flash` | `kilo/google/gemini-3-flash-preview` |

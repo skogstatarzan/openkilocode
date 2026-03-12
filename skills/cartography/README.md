@@ -4,7 +4,7 @@ Repository understanding and hierarchical codemap generation.
 
 ## Overview
 
-Cartography helps orchestrators map and understand codebases by:
+Cartography helps coordinators map and understand codebases by:
 
 1. Selecting relevant code/config files using LLM judgment
 2. Creating `.slim/cartography.json` for change tracking
