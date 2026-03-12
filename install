@@ -933,12 +933,14 @@ install_worktree_plugin() {
     
     # Verify OCX is available
     if ! command -v ocx &> /dev/null; then
+        local fallback_config_dir
+        fallback_config_dir=$(get_config_dir "$INSTALL_TYPE" "$OS")
         echo -e "${YELLOW}OCX installed but not in PATH. You may need to restart your terminal.${NC}"
         echo -e "${YELLOW}After restart, run:${NC}"
         echo -e "${YELLOW}  ocx init --global${NC}"
         echo -e "${YELLOW}  ocx registry add https://registry.kdco.dev --name kdco --global${NC}"
         echo -e "${YELLOW}  ocx add kdco/worktree --global${NC}"
-        echo -e "${YELLOW}  cd ~/.config/opencode && bun install${NC}"
+        echo -e "${YELLOW}  cd $fallback_config_dir && bun install${NC}"
         return 0
     fi
     
@@ -956,7 +958,7 @@ install_worktree_plugin() {
     
     # Install plugin dependencies
     local config_dir
-    config_dir=$(get_config_dir "opencode" "$OS")
+    config_dir=$(get_config_dir "$INSTALL_TYPE" "$OS")
     
     if [[ -f "$config_dir/package.json" ]]; then
         echo -e "${BLUE}Installing plugin dependencies...${NC}"
@@ -964,11 +966,16 @@ install_worktree_plugin() {
         # Fix potentially incorrect version in package.json
         # OCX may generate a version that doesn't exist yet
         local pkg_file="$config_dir/package.json"
-        if grep -q '"@opencode-ai/plugin"' "$pkg_file" 2>/dev/null; then
+        local plugin_pkg="@opencode-ai/plugin"
+        if [[ "$INSTALL_TYPE" == "kilo" ]]; then
+            plugin_pkg="@kilocode/plugin"
+        fi
+        
+        if grep -q "\"$plugin_pkg\"" "$pkg_file" 2>/dev/null; then
             # Get latest available version and update package.json
             local latest_version
-            latest_version=$(npm view @opencode-ai/plugin version 2>/dev/null || echo "1.2.12")
-            sed 's/"@opencode-ai\/plugin": "[^"]*"/"@opencode-ai\/plugin": "'"$latest_version"'"/' "$pkg_file" > "$pkg_file.tmp" && mv "$pkg_file.tmp" "$pkg_file" 2>/dev/null || true
+            latest_version=$(npm view "$plugin_pkg" version 2>/dev/null || echo "1.2.12")
+            sed 's/"'"$plugin_pkg"'": "[^"]*"/"'"$plugin_pkg"'": "'"$latest_version"'"/' "$pkg_file" > "$pkg_file.tmp" && mv "$pkg_file.tmp" "$pkg_file" 2>/dev/null || true
         fi
         
         # Prefer bun if available (faster), otherwise use npm
